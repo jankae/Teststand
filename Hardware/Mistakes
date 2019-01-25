@@ -1,0 +1,4 @@
+No HSE crystal (must be used for USB)
+Power supply of AD8538 inverted
+CS and RST of display not connected to MCU
+

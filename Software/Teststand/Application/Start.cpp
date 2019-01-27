@@ -6,6 +6,9 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "input.hpp"
+#include "desktop.hpp"
+#include "gui.hpp"
+#include "Settings.hpp"
 
 extern ADC_HandleTypeDef hadc1;
 extern SPI_HandleTypeDef hspi1;
@@ -106,6 +109,19 @@ void Start() {
 	}
 
 	Input::Init();
+//	Input::Calibrate();
+	Desktop d;
+	App::Info app;
+	app.task = Settings::Task;
+	app.StackSize = 256;
+	app.name = "Settings";
+	app.descr = "Edit device settings";
+	app.icon = &Settings::Icon;
+	App(app, d);
+	GUI::Init(d);
 
-	while(1);
+
+	while(1) {
+		vTaskDelay(1000);
+	}
 }

@@ -36,6 +36,7 @@ extern "C" {
 #define Log_App		  	(LevelAll)
 #define Log_MAX11254	(LevelAll)
 #define Log_Input		(LevelAll)
+#define Log_GUI			(LevelAll)
 
 // if LevelDebug is omitted from this mask,
 // debug message will not be logged regardless

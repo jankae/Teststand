@@ -10,17 +10,16 @@
 #include "file.h"
 #include "display.h"
 
+#include "gui.hpp"
+
 static StaticTask_t xTask;
 static StackType_t xStack[Input::task_stack];
 
-static QueueHandle_t EventQueue;
-constexpr uint8_t MaxQueueItems = 3;
-static StaticQueue_t EventQueueMem;
-static uint8_t QueueBuf[MaxQueueItems * sizeof(Input::Event)];
-
-static int32_t offsetX = 0, offsetY = 0;
-static float scaleX = (float) DISPLAY_WIDTH / 4096;
-static float scaleY = (float) DISPLAY_HEIGHT / 4096;
+// TODO remove hardcoded value, save to file instead
+static int32_t offsetX = -30;
+static int32_t offsetY = -27;
+static float scaleX = 0.0932;//(float) DISPLAY_WIDTH / 4096;
+static float scaleY = 0.0677;//(float) DISPLAY_HEIGHT / 4096;
 
 const fileEntry_t touchCal[4] = {
 		{"xfactor", &scaleX, PTR_FLOAT},
@@ -47,23 +46,29 @@ static void inputThread(void *ptr) {
 	bool longTouch = false;
 	LOG(Log_Input, LevelInfo, "Thread start");
 
+	uint32_t lastDragEvent = 0;
+
 	Touch::SetPENCallback(penirq, xTaskGetCurrentTaskHandle());
 	while (1) {
 		coords_t touch;
 		lastTouch = touch;
 		uint32_t wait = portMAX_DELAY;
-		if(touched) {
+		if (touched) {
 			wait = pdMS_TO_TICKS(20);
 		}
 		xTaskNotifyWait(0, 0, NULL, wait);
 		bool old = touched;
 		touched = Touch::GetCoordinates(touch);
+		if (touched) {
+			// clear additional notification during sampling
+			xTaskNotifyWait(0, 0, NULL, 0);
+		}
 		touch.x = constrain_int16_t(touch.x * scaleX + offsetX, 0,
 				DISPLAY_WIDTH - 1);
-		touch.y = constrain_int16_t(touch.y * scaleX + offsetX, 0,
+		touch.y = constrain_int16_t(touch.y * scaleY + offsetY, 0,
 				DISPLAY_HEIGHT - 1);
-		Event ev;
-		ev.type = Event::Type::NONE;
+		GUIEvent_t ev;
+		ev.type = EVENT_NONE;
 		if (!old && touched) {
 			LOG(Log_Input, LevelDebug, "Touch pressed: %d, %d", touch.x,
 					touch.y);
@@ -71,25 +76,40 @@ static void inputThread(void *ptr) {
 			longTouch = false;
 			touchMoved = false;
 			touchStart = HAL_GetTick();
-			ev.type = Event::Type::PRESSED;
-			ev.coords = touch;
+			lastDragEvent = touchStart;
+			ev.type = EVENT_TOUCH_PRESSED;
+			ev.pos = touch;
 		} else if(old && !touched) {
 			LOG(Log_Input, LevelDebug, "Touch released", lastTouch.x,
 					lastTouch.y);
-			ev.type = Event::Type::RELEASED;
-			ev.coords = lastTouch;
+			ev.type = EVENT_TOUCH_RELEASED;
+			ev.pos = lastTouch;
 		} else if(old && touched) {
 			// check if continually pressed for some time
 			if (!longTouch && !touchMoved
 					&& HAL_GetTick() - touchStart > LongTouchTime) {
+				LOG(Log_Input, LevelDebug, "Long touch: %d, %d",
+						initialTouch.x, initialTouch.y);
 				longTouch = true;
-				ev.type = Event::Type::TOUCH_AND_HOLD;
-				ev.coords = initialTouch;
+				ev.type = EVENT_TOUCH_HELD;
+				ev.pos = initialTouch;
+			} else if (!longTouch) {
+				if (touchMoved || abs(initialTouch.x - touch.x) > 20
+						|| abs(initialTouch.y - touch.y) > 20) {
+					if (HAL_GetTick() - lastDragEvent > 250) {
+						lastDragEvent = HAL_GetTick();
+						LOG(Log_Input, LevelDebug, "touch dragged");
+						touchMoved = true;
+						ev.type = EVENT_TOUCH_DRAGGED;
+						ev.pos = initialTouch;
+						ev.dragged = touch;
+					}
+				}
 			}
 		}
 
-		if (ev.type != Event::Type::NONE) {
-			if (xQueueSend(EventQueue, &ev, 0) != pdTRUE) {
+		if (ev.type != EVENT_NONE) {
+			if (!GUI::SendEvent(&ev)) {
 				LOG(Log_Input, LevelWarn, "Event queue full");
 			}
 		}
@@ -97,15 +117,9 @@ static void inputThread(void *ptr) {
 }
 
 bool Input::Init() {
-	EventQueue = xQueueCreateStatic(MaxQueueItems, sizeof(Event), QueueBuf,
-			&EventQueueMem);
 	xTaskCreateStatic(inputThread, "INPUT", task_stack, nullptr, 5, xStack,
 			&xTask);
 	return true;
-}
-
-bool Input::WaitForEvent(Event& ev, uint32_t timeout) {
-	return xQueueReceive(EventQueue, &ev, timeout) == pdTRUE;
 }
 
 static coords_t GetCalibrationPoint(bool top, coords_t cross) {

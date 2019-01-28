@@ -98,7 +98,6 @@ void Desktop::draw(coords_t offset) {
 }
 #include "log.h"
 void Desktop::input(GUIEvent_t* ev) {
-	LOG(Log_GUI, LevelDebug, "Desktop input");
 	switch (ev->type) {
 	case EVENT_TOUCH_PRESSED:
 		/* get icon number */

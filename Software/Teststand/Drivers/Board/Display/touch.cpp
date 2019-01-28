@@ -1,8 +1,6 @@
 #include "touch.hpp"
 #include "FreeRTOS.h"
 #include "semphr.h"
-#include "fatfs.h"
-#include "file.h"
 
 #define CS_LOW()			(TOUCH_CS_GPIO_Port->BSRR = TOUCH_CS_Pin<<16u)
 #define CS_HIGH()			(TOUCH_CS_GPIO_Port->BSRR = TOUCH_CS_Pin)

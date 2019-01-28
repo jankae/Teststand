@@ -85,7 +85,7 @@ exti_result_t exti_set_callback(GPIO_TypeDef *gpio, uint16_t pin, exti_type_t ty
 	entries[index].gpio = gpio;
 	entries[index].cb = cb;
 	entries[index].ptr = ptr;
-	LOG(Log_Exti, LevelInfo, "Callback set for pin %d, GPIO %p", index,
+	LOG(Log_Exti, LevelDebug, "Callback set for pin %d, GPIO %p", index,
 			entries[index].gpio);
 	return EXTI_RES_OK;
 }
@@ -108,7 +108,7 @@ exti_result_t exti_clear_callback(GPIO_TypeDef *gpio, uint16_t pin) {
 	entries[index].gpio = NULL;
 	entries[index].cb = NULL;
 	entries[index].ptr = NULL;
-	LOG(Log_Exti, LevelInfo, "Callback cleared for pin %d, GPIO %p", index,
+	LOG(Log_Exti, LevelDebug, "Callback cleared for pin %d, GPIO %p", index,
 			gpio);
 	return EXTI_RES_OK;
 }

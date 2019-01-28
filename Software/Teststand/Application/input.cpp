@@ -7,7 +7,7 @@
 #include "touch.hpp"
 #include "log.h"
 #include "fatfs.h"
-#include "file.h"
+#include "file.hpp"
 #include "display.h"
 
 #include "gui.hpp"
@@ -21,11 +21,11 @@ static int32_t offsetY = -27;
 static float scaleX = 0.0932;//(float) DISPLAY_WIDTH / 4096;
 static float scaleY = 0.0677;//(float) DISPLAY_HEIGHT / 4096;
 
-const fileEntry_t touchCal[4] = {
-		{"xfactor", &scaleX, PTR_FLOAT},
-		{"xoffset", &offsetX, PTR_INT32},
-		{"yfactor", &scaleY, PTR_FLOAT},
-		{"yoffset", &offsetY, PTR_INT32},
+const File::Entry touchCal[4] = {
+		{"xfactor", &scaleX, File::PointerType::FLOAT},
+		{"xoffset", &offsetX, File::PointerType::INT32},
+		{"yfactor", &scaleY, File::PointerType::FLOAT},
+		{"yoffset", &offsetY, File::PointerType::INT32},
 };
 
 static void penirq(void *ptr) {

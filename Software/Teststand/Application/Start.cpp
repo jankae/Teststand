@@ -9,10 +9,13 @@
 #include "desktop.hpp"
 #include "gui.hpp"
 #include "Settings.hpp"
+#include "file.hpp"
+#include "touch.hpp"
+#include "Loadcells.hpp"
 
 extern ADC_HandleTypeDef hadc1;
-extern SPI_HandleTypeDef hspi1;
-static max11254_t max;
+//extern SPI_HandleTypeDef hspi1;
+//static max11254_t max;
 // global mutex controlling access to SPI1 (used for touch, loadcell ADC + SD card)
 SemaphoreHandle_t xMutexSPI1;
 static StaticSemaphore_t xSemSPI1;
@@ -36,27 +39,32 @@ static bool VCCRail() {
 }
 
 static bool Frontend_init() {
-	max.spi = &hspi1;
-	max.CSgpio = GPIOB;
-	max.CSpin = GPIO_PIN_0;
-	max.RDYBgpio = GPIOC;
-	max.RDYBpin = GPIO_PIN_4;
-	HAL_GPIO_WritePin(MAX11254_RESET_GPIO_Port, MAX11254_RESET_Pin,
-			GPIO_PIN_SET);
-	vTaskDelay(10);
-	return max11254_init(&max) == MAX11254_RES_OK;
+	return Loadcells::Init();
+//	max.spi = &hspi1;
+//	max.CSgpio = GPIOB;
+//	max.CSpin = GPIO_PIN_0;
+//	max.RDYBgpio = GPIOC;
+//	max.RDYBpin = GPIO_PIN_4;
+//	HAL_GPIO_WritePin(MAX11254_RESET_GPIO_Port, MAX11254_RESET_Pin,
+//			GPIO_PIN_SET);
+//	vTaskDelay(10);
+//	return max11254_init(&max) == MAX11254_RES_OK;
 }
 
 static bool Frontend_measurement() {
-	uint32_t start = HAL_GetTick();
-	int32_t meas = max11254_single_conversion(&max, 0,
-			MAX11254_RATE_CONT1_9_SINGLE50);
-	uint32_t end = HAL_GetTick();
-	if(end - start > 50 && meas == 0) {
-		return false;
-	} else {
-		return true;
-	}
+//	uint32_t start = HAL_GetTick();
+//	int32_t meas = max11254_single_conversion(&max, 0,
+//			MAX11254_RATE_CONT1_9_SINGLE50);
+//	uint32_t end = HAL_GetTick();
+//	if(end - start > 50 && meas == 0) {
+//		return false;
+//	} else {
+//		return true;
+//	}
+}
+
+static bool SDCardMount() {
+	return File::Init() == FR_OK;
 }
 
 using Test = struct {
@@ -67,7 +75,8 @@ using Test = struct {
 constexpr Test Selftests[] = {
 		{"3V3 rail", VCCRail},
 		{"MAX11254 init", Frontend_init},
-		{"MAX11254 measurement", Frontend_measurement},
+//		{"MAX11254 measurement", Frontend_measurement},
+		{"SD card mount", SDCardMount},
 };
 constexpr uint8_t nTests = sizeof(Selftests) / sizeof(Selftests[0]);
 
@@ -76,7 +85,6 @@ void Start() {
 	log_init();
 	LOG(Log_App, LevelInfo, "Start");
 
-	vTaskDelay(300);
 	xMutexSPI1 = xSemaphoreCreateMutexStatic(&xSemSPI1);
 
 	// initialize display
@@ -108,6 +116,17 @@ void Start() {
 		display_SetForeground(COLOR_WHITE);
 	}
 
+	display_String(0, DISPLAY_HEIGHT - Font_Big.height - 1,
+			"Press screen to continue");
+	{
+		coords_t dummy;
+		while (!Touch::GetCoordinates(dummy))
+			;
+		while (Touch::GetCoordinates(dummy))
+			;
+	}
+
+//	Loadcells::Setup(0x3F, MAX11254_RATE_CONT1_9_SINGLE50);
 	Input::Init();
 //	Input::Calibrate();
 	Desktop d;

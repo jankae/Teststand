@@ -35,9 +35,9 @@ struct {
 	};
 } dialog;
 
-static void MessageBoxButton(Widget &w) {
+static void MessageBoxButton(Widget *w) {
 	dialog.msgbox.res = Result::ERR;
-	Button *b = (Button*) &w;
+	Button *b = (Button*) w;
 	/* find which button has been pressed */
 	if(!strcmp(b->getName(), "OK")) {
 		dialog.msgbox.res = Result::OK;
@@ -91,7 +91,7 @@ Result MessageBox(const char *title, font_t font, const char *msg,
 		Button *bOK = new Button("OK", Font_Big, MessageBoxButton, 65);
 		c->attach(bOK, COORDS((c->getSize().x - bOK->getSize().x) / 2,
 						c->getSize().y - bOK->getSize().y - 1));
-		bOK->select();
+//		bOK->select();
 	}
 	break;
 	case MsgBox::ABORT_OK: {
@@ -103,7 +103,7 @@ Result MessageBox(const char *title, font_t font, const char *msg,
 		c->attach(bOK,
 				COORDS(c->getSize().x / 2 + 1,
 						c->getSize().y - bOK->getSize().y - 1));
-		bAbort->select();
+//		bAbort->select();
 	}
 		break;
 	}
@@ -218,7 +218,7 @@ Result FileChooser(const char *title, char *result,
 	Window *w = new Window(title, Font_Big, COORDS(280, 200));
 	Container *c = new Container(w->getAvailableArea());
 
-	Button *bAbort = new Button("ABORT", Font_Big, [](Widget &w) {
+	Button *bAbort = new Button("ABORT", Font_Big, [](Widget *w) {
 		dialog.fileChooser.OKclicked = 0;
 		xSemaphoreGive(dialog.fileChooser.dialogDone);
 	}, 80);
@@ -229,20 +229,20 @@ Result FileChooser(const char *title, char *result,
 				&selectedFile, Font_Big,
 				(c->getSize().y - 30) / Font_Big.height, c->getSize().x);
 		c->attach(i, COORDS(0, 0));
-		Button *bOK = new Button("OK", Font_Big, [](Widget &w) {
+		Button *bOK = new Button("OK", Font_Big, [](Widget *w) {
 			dialog.fileChooser.OKclicked = 1;
 			xSemaphoreGive(dialog.fileChooser.dialogDone);
 		}, 80);
 		c->attach(bOK,
 				COORDS(c->getSize().x - bOK->getSize().x - 5,
 						c->getSize().y - bOK->getSize().y - 5));
-		i->select();
+//		i->select();
 	} else {
 		/* got no files */
 		Label *lNoFiles = new Label("No files available", Font_Big);
 		c->attach(lNoFiles,
 				COORDS((c->getSize().x - lNoFiles->getSize().x) / 2, 40));
-		bAbort->select();
+//		bAbort->select();
 	}
 
 
@@ -328,11 +328,11 @@ Result StringInput(const char *title, char *result, uint8_t maxLength) {
 			c->getSize().x / Font_Big.width, Font_Big, Label::Orientation::CENTER);
 
 	/* Create buttons */
-	Button *bOK = new Button("OK", Font_Big, [](Widget &w) {
+	Button *bOK = new Button("OK", Font_Big, [](Widget *w) {
 		dialog.StringInput.OKclicked = 1;
 		xSemaphoreGive(dialog.StringInput.dialogDone);
 	}, 80);
-	Button *bAbort = new Button("ABORT", Font_Big, [](Widget &w) {
+	Button *bAbort = new Button("ABORT", Font_Big, [](Widget *w) {
 		dialog.StringInput.OKclicked = 0;
 		xSemaphoreGive(dialog.StringInput.dialogDone);
 	}, 80);
@@ -345,7 +345,7 @@ Result StringInput(const char *title, char *result, uint8_t maxLength) {
 	c->attach(bAbort,
 			COORDS(5, c->getSize().y - bAbort->getSize().y - 5));
 
-	k->select();
+//	k->select();
 	w->setMainWidget(c);
 
 	/* Wait for button to be clicked */
@@ -390,7 +390,7 @@ Result UnitInput(const char *title, int32_t *result, uint8_t maxLength, const un
 	Entry *e = new Entry(result, NULL, NULL, Font_Big, maxLength, unit);
 
 	/* Create buttons */
-	Button *bOK = new Button("OK", Font_Big, [](Widget &w) {
+	Button *bOK = new Button("OK", Font_Big, [](Widget *w) {
 		xSemaphoreGive(dialog.UnitInput.dialogDone);
 	}, 80);
 
@@ -400,7 +400,7 @@ Result UnitInput(const char *title, int32_t *result, uint8_t maxLength, const un
 			COORDS((c->getSize().x - bOK->getSize().x) / 2,
 					c->getSize().y - bOK->getSize().y - 5));
 
-	e->select();
+//	e->select();
 	w->setMainWidget(c);
 
 	/* Wait for button to be clicked */

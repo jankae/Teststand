@@ -42,7 +42,7 @@ void App::Exit() {
 bool App::Stop() {
 	// TODO send stop signal
 	state = State::Stopping;
-	constexpr uint32_t maxStopDelay = 100;
+	constexpr uint32_t maxStopDelay = 2000;
 	uint32_t start = HAL_GetTick();
 	while(state != State::Stopped) {
 		vTaskDelay(10);

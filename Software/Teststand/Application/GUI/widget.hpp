@@ -41,8 +41,8 @@ public:
 		return selectedWidget;
 	}
 
-	static void deselect();
-	void select(bool down = true);
+//	static void deselect();
+//	void select(bool down = true);
 
 	void requestRedrawChildren();
 	void requestRedraw();
@@ -78,7 +78,7 @@ public:
 	void addChild(Widget *w, coords_t pos);
 
 protected:
-	Widget* IntSelectChild();
+//	Widget* IntSelectChild();
 
 	virtual void draw(coords_t offset) { return; }
 	virtual void input(GUIEvent_t *ev) { return; }
@@ -94,7 +94,7 @@ protected:
 	coords_t position;
 	coords_t size;
 	bool visible :1;
-	bool selected :1;
+//	bool selected :1;
 	bool selectable :1;
 //	bool focus :1;
 	/* this widget needs to be redrawn */

@@ -109,7 +109,7 @@ void Desktop::input(GUIEvent_t* ev) {
 				switch (apps[app]->state) {
 				case App::State::Stopped:
 					/* start app */
-					selected = app;
+					focussed = app;
 					apps[app]->state = App::State::Starting;
 					if (!apps[app]->Start()) {
 						apps[app]->state = App::State::Stopped;

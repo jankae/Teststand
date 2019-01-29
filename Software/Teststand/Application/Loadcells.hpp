@@ -8,16 +8,17 @@ namespace Loadcells {
 
 constexpr uint8_t MaxCells = 6;
 
-using Cell = struct {
+using Cell = struct cell {
 	int32_t raw;
 	int32_t offset;
 	float scale;
 	float gram;
 };
 
-std::array<Cell, MaxCells> cells;
+extern std::array<Cell, MaxCells> cells;
+extern std::array<bool, MaxCells> enabled;
 
 bool Init();
-void Setup(uint8_t activeMask, max11254_rate_t rate);
+void Setup(max11254_rate_t rate);
 
 }

@@ -34,11 +34,11 @@ void Keyboard::draw(coords_t offset) {
 	lowerRight.y += size.y - 1;
 
 	/* Draw surrounding rectangle */
-	if (selected) {
-		display_SetForeground(Selected);
-	} else {
+//	if (selected) {
+//		display_SetForeground(Selected);
+//	} else {
 		display_SetForeground(Border);
-	}
+//	}
 	display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 	display_SetForeground(Border);
 
@@ -208,7 +208,7 @@ void Keyboard::input(GUIEvent_t *ev) {
 //		}
 //		break;
 	case EVENT_TOUCH_PRESSED:
-		if (selected) {
+//		if (selected) {
 			/* only react to touch if already selected. This allows
 			 * the user to select the widget without already changing the value */
 			/* Calculate key pressed */
@@ -216,7 +216,7 @@ void Keyboard::input(GUIEvent_t *ev) {
 			selectedY = ev->pos.y / spacingY;
 			sendChar();
 			requestRedraw();
-		}
+//		}
 		break;
 	default:
 		break;

@@ -51,7 +51,7 @@ static bool Frontend_init() {
 //	return max11254_init(&max) == MAX11254_RES_OK;
 }
 
-static bool Frontend_measurement() {
+//static bool Frontend_measurement() {
 //	uint32_t start = HAL_GetTick();
 //	int32_t meas = max11254_single_conversion(&max, 0,
 //			MAX11254_RATE_CONT1_9_SINGLE50);
@@ -61,7 +61,7 @@ static bool Frontend_measurement() {
 //	} else {
 //		return true;
 //	}
-}
+//}
 
 static bool SDCardMount() {
 	return File::Init() == FR_OK;

@@ -7,7 +7,7 @@
 
 class Checkbox : public Widget {
 public:
-	Checkbox(bool *value, void (*cb)(Widget&), coords_t size = COORDS(29, 29));
+	Checkbox(bool *value, void (*cb)(Widget*), coords_t size = COORDS(29, 29));
 
 private:
 	void draw(coords_t offset) override;
@@ -20,7 +20,7 @@ private:
 	static constexpr color_t Ticked = COLOR(0, 192, 0);
 	static constexpr color_t Unticked = COLOR(238, 0, 0);
 
-    void (*callback)(Widget& source);
+    void (*callback)(Widget* source);
     bool *value;
 };
 

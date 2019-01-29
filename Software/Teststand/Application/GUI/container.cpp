@@ -54,28 +54,28 @@ void Container::attach(Widget *w, coords_t offset) {
 }
 
 void Container::draw(coords_t offset) {
-	Widget *child = firstChild;
-	Widget *selected = child;
-	for (; selected; selected = selected->next) {
-		if (selected->selected) {
-			/* move canvas offset so that selected is visible */
-			if (selected->position.x < canvasOffset.x) {
-				canvasOffset.x = selected->position.x;
-			} else if (selected->position.x + selected->size.x
-					> viewingSize.x + canvasOffset.x) {
-				canvasOffset.x = selected->position.x + selected->size.x
-						- viewingSize.x;
-			}
-			if (selected->position.y < canvasOffset.y) {
-				canvasOffset.y = selected->position.y;
-			} else if (selected->position.y + selected->size.y
-					> viewingSize.y + canvasOffset.y) {
-				canvasOffset.y = selected->position.y + selected->size.y
-						- viewingSize.y;
-			}
-		}
-		break;
-	}
+//	Widget *child = firstChild;
+//	Widget *selected = child;
+//	for (; selected; selected = selected->next) {
+//		if (selected->selected) {
+//			/* move canvas offset so that selected is visible */
+//			if (selected->position.x < canvasOffset.x) {
+//				canvasOffset.x = selected->position.x;
+//			} else if (selected->position.x + selected->size.x
+//					> viewingSize.x + canvasOffset.x) {
+//				canvasOffset.x = selected->position.x + selected->size.x
+//						- viewingSize.x;
+//			}
+//			if (selected->position.y < canvasOffset.y) {
+//				canvasOffset.y = selected->position.y;
+//			} else if (selected->position.y + selected->size.y
+//					> viewingSize.y + canvasOffset.y) {
+//				canvasOffset.y = selected->position.y + selected->size.y
+//						- viewingSize.y;
+//			}
+//		}
+//		break;
+//	}
 	/* draw scroll bars if necessary */
 	if (scrollVertical) {
 		display_SetForeground (LineColor);
@@ -267,11 +267,11 @@ void Container::input(GUIEvent_t *ev) {
 
 void Container::drawChildren(coords_t offset) {
     Widget *child = firstChild;
-    Widget *selected = child;
-    for (; selected; selected = selected->next) {
-        if (selected->selected)
-            break;
-    }
+//    Widget *selected = child;
+//    for (; selected; selected = selected->next) {
+//        if (selected->selected)
+//            break;
+//    }
 
 //	display_SetActiveArea(offset.x, offset.x + viewingSize.x, offset.y,
 //			offset.y + viewingSize.y);
@@ -281,7 +281,7 @@ void Container::drawChildren(coords_t offset) {
 
     /* draw its children */
     for (; child; child = child->next) {
-		if (child->visible && !child->selected) {
+		if (child->visible/* && !child->selected*/) {
 			/* check if child is at least partially in viewing field */
 			if (child->position.x + child->size.x >= canvasOffset.x
 					&& child->position.y + child->size.y >= canvasOffset.y
@@ -292,10 +292,10 @@ void Container::drawChildren(coords_t offset) {
 			}
         }
     }
-    /* always draw selected child last (might overwrite other children) */
-    if (selected) {
-    	Widget::draw(selected, offset);
-    }
+//    /* always draw selected child last (might overwrite other children) */
+//    if (selected) {
+//    	Widget::draw(selected, offset);
+//    }
 
     display_SetDefaultArea();
 

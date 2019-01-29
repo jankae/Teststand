@@ -16,7 +16,7 @@ Widget::Widget() {
 	size = {0, 0};
 
     visible = true;
-    selected = false;
+//    selected = false;
     selectable = true;
     redraw = true;
     redrawClear = false;
@@ -104,13 +104,13 @@ void Widget::input(Widget *w, GUIEvent_t* ev) {
 					return;
 				}
 			}
-			/* Couldn't find any matching children -> this widget will be selected */
-			if (ev->type == EVENT_TOUCH_PRESSED)
-				w->select();
+//			/* Couldn't find any matching children -> this widget will be selected */
+//			if (ev->type == EVENT_TOUCH_PRESSED)
+//				w->select();
 		} else {
-			/* widget handled the input itself -> it is now selected */
-			if (ev->type == EVENT_TOUCH_PRESSED)
-				w->select();
+//			/* widget handled the input itself -> it is now selected */
+//			if (ev->type == EVENT_TOUCH_PRESSED)
+//				w->select();
 		}
 		break;
 	case EVENT_BUTTON_CLICKED:
@@ -125,60 +125,60 @@ void Widget::input(Widget *w, GUIEvent_t* ev) {
 	}
 }
 
-void Widget::deselect() {
-	if (selectedWidget) {
-		selectedWidget->selected = false;
-		selectedWidget->requestRedraw();
-		selectedWidget = nullptr;
-	}
-}
+//void Widget::deselect() {
+//	if (selectedWidget) {
+//		selectedWidget->selected = false;
+//		selectedWidget->requestRedraw();
+//		selectedWidget = nullptr;
+//	}
+//}
 
-Widget* Widget::IntSelectChild() {
-	for(auto child = firstChild;child;child=child->next) {
-		if(child->selectable)
-			/* Found selectable direct child, use this */
-			return child;
-	}
-	/* No selectable child avaible, recursively check for child of children */
-	for(auto child = firstChild;child;child=child->next) {
-		auto res = child->IntSelectChild();
-		if(res)
-			return res;
-	}
-	return nullptr;
-}
+//Widget* Widget::IntSelectChild() {
+//	for(auto child = firstChild;child;child=child->next) {
+//		if(child->selectable)
+//			/* Found selectable direct child, use this */
+//			return child;
+//	}
+//	/* No selectable child avaible, recursively check for child of children */
+//	for(auto child = firstChild;child;child=child->next) {
+//		auto res = child->IntSelectChild();
+//		if(res)
+//			return res;
+//	}
+//	return nullptr;
+//}
 
-void Widget::select(bool down) {
-	if(this != selectedWidget) {
-		/* de-select currently selected widget */
-		Widget *newSel = nullptr;
-		if(selectable) {
-			newSel = this;
-		} else {
-			/* This widget is not selectable, try to find next in line */
-			if(down) {
-				newSel = this->IntSelectChild();
-			} else {
-				/* Select next selectable parent */
-				for (Widget* p = this->parent; p; p = p->parent) {
-					if (p->selectable) {
-						newSel = p;
-						break;
-					}
-				}
-			}
-		}
-		if (selectedWidget) {
-			selectedWidget->selected = false;
-			selectedWidget->requestRedraw();
-		}
-		if (newSel) {
-			selectedWidget = newSel;
-			newSel->selected = true;
-			newSel->requestRedraw();
-		}
-	}
-}
+//void Widget::select(bool down) {
+//	if(this != selectedWidget) {
+//		/* de-select currently selected widget */
+//		Widget *newSel = nullptr;
+//		if(selectable) {
+//			newSel = this;
+//		} else {
+//			/* This widget is not selectable, try to find next in line */
+//			if(down) {
+//				newSel = this->IntSelectChild();
+//			} else {
+//				/* Select next selectable parent */
+//				for (Widget* p = this->parent; p; p = p->parent) {
+//					if (p->selectable) {
+//						newSel = p;
+//						break;
+//					}
+//				}
+//			}
+//		}
+//		if (selectedWidget) {
+//			selectedWidget->selected = false;
+//			selectedWidget->requestRedraw();
+//		}
+//		if (newSel) {
+//			selectedWidget = newSel;
+//			newSel->selected = true;
+//			newSel->requestRedraw();
+//		}
+//	}
+//}
 
 void Widget::requestRedrawChildren() {
 	if (!firstChild) {

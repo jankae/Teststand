@@ -4,12 +4,14 @@
 #include "task.h"
 #include "log.h"
 
-static uint8_t active = 0x00;
 static max11254_rate_t samplingRate = MAX11254_RATE_CONT1_9_SINGLE50;
 
 static TaskHandle_t handle;
 extern SPI_HandleTypeDef hspi1;
 static max11254_t max;
+
+std::array<Loadcells::Cell, Loadcells::MaxCells> Loadcells::cells;
+std::array<bool, Loadcells::MaxCells> Loadcells::enabled;
 
 enum class Notification : uint32_t {
 	NewSample,
@@ -19,7 +21,7 @@ enum class Notification : uint32_t {
 static void conversionComplete(void *ptr) {
 	BaseType_t yield = pdFALSE;
 	xTaskNotifyFromISR(handle, (uint32_t ) Notification::NewSample,
-			eSetValueWithOverwrite, &yield);
+			eSetValueWithoutOverwrite, &yield);
 	portYIELD_FROM_ISR(yield);
 }
 
@@ -30,9 +32,9 @@ static void loadcelltask(void *ptr) {
 		xTaskNotifyWait(0, 0xFFFFFFFF, (uint32_t*) &n, portMAX_DELAY);
 		switch(n) {
 		case Notification::NewSample:
-			LOG(Log_Loadcell, LevelInfo, "New sample");
+			LOG(Log_Loadcell, LevelDebug, "New sample");
 			for (uint8_t i = 0; i < Loadcells::cells.size(); i++) {
-				if (active & 0x01 << i) {
+				if (Loadcells::enabled[i]) {
 					auto& cell = Loadcells::cells[i];
 					cell.raw = max11254_read_result(&max, i);
 					cell.gram = (cell.raw - cell.offset) * cell.scale;
@@ -43,17 +45,22 @@ static void loadcelltask(void *ptr) {
 			break;
 		case Notification::NewSettings:
 			LOG(Log_Loadcell, LevelInfo, "New settings");
+			max11254_power_down(&max);
 			uint8_t order = 1;
 			for (uint8_t i = 0; i < Loadcells::cells.size(); i++) {
-				if (active & 0x01 << i) {
+				if (Loadcells::enabled[i]) {
+					LOG(Log_Loadcell, LevelInfo, "Enable channel %d", i);
 					max11254_sequence_enable_channel(&max, i, order++,
 							MAX11254_GPIO_None);
 				} else {
+					LOG(Log_Loadcell, LevelInfo, "Disable channel %d", i);
 					max11254_sequence_disable_channel(&max, i);
 				}
 			}
-			max11254_scan_conversion_static_gpio(&max, samplingRate,
-					conversionComplete, nullptr);
+			if (order > 1) {
+				max11254_scan_conversion_static_gpio(&max, samplingRate,
+						conversionComplete, nullptr);
+			}
 		}
 	}
 }
@@ -79,8 +86,7 @@ bool Loadcells::Init() {
 	return true;
 }
 
-void Loadcells::Setup(uint8_t activeMask, max11254_rate_t rate) {
-	active = activeMask;
+void Loadcells::Setup(max11254_rate_t rate) {
 	samplingRate = rate;
 	if (handle) {
 		xTaskNotify(handle, (uint32_t ) Notification::NewSettings,

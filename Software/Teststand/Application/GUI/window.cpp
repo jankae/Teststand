@@ -24,7 +24,7 @@ Window::Window(const char *title, font_t font, coords_t size) {
 }
 Window::~Window() {
 	/* restore last top widget */
-	Widget::deselect();
+//	Widget::deselect();
 	topWidget = lastTopWidget;
 	isPopup = lastPopup;
 	/* request full redraw of new top widget */

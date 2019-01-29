@@ -65,11 +65,11 @@ void Entry::draw(coords_t offset) {
 	coords_t lowerRight = upperLeft;
 	lowerRight.x += size.x - 1;
 	lowerRight.y += size.y - 1;
-	if (selected) {
-		display_SetForeground(COLOR_SELECTED);
-	} else {
+//	if (selected) {
+//		display_SetForeground(COLOR_SELECTED);
+//	} else {
 		display_SetForeground(Border);
-	}
+//	}
 	display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 
 	/* display string */

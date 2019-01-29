@@ -1,6 +1,6 @@
 #include "checkbox.hpp"
 
-Checkbox::Checkbox(bool *value, void (*cb)(Widget&), coords_t size) {
+Checkbox::Checkbox(bool *value, void (*cb)(Widget*), coords_t size) {
     this->value = value;
     callback = cb;
     this->size = size;
@@ -12,11 +12,11 @@ void Checkbox::draw(coords_t offset) {
 	coords_t lowerRight = upperLeft;
 	lowerRight.x += size.x - 1;
 	lowerRight.y += size.y - 1;
-	if (selected) {
-		display_SetForeground(COLOR_SELECTED);
-	} else {
+//	if (selected) {
+//		display_SetForeground(COLOR_SELECTED);
+//	} else {
 		display_SetForeground (Border);
-	}
+//	}
 	display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 	if (*value) {
 		display_SetForeground (Ticked);
@@ -60,7 +60,7 @@ void Checkbox::input(GUIEvent_t *ev) {
 		*value = !*value;
 		requestRedrawFull();
 		if (callback)
-			callback(*this);
+			callback(this);
 		ev->type = EVENT_NONE;
 		break;
 	default:

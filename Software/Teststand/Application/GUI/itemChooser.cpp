@@ -51,11 +51,11 @@ void ItemChooser::draw(coords_t offset) {
 	lowerRight.y += size.y - 1;
 
 	/* Draw surrounding rectangle */
-	if (selected) {
-		display_SetForeground(COLOR_SELECTED);
-	} else {
+//	if (selected) {
+//		display_SetForeground(COLOR_SELECTED);
+//	} else {
 		display_SetForeground(Border);
-	}
+//	}
 	display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 	display_SetForeground (Border);
 
@@ -145,8 +145,8 @@ void ItemChooser::input(GUIEvent_t *ev) {
 //			ev->type = EVENT_NONE;
 //		}
 //		break;
-	case EVENT_TOUCH_PRESSED:
-		if (selected) {
+	case EVENT_TOUCH_PRESSED: {
+//		if (selected) {
 			/* only react to touch if already selected. This allows
 			 * the user to select the widget without already changing the value */
 			int16_t newVal = topVisibleEntry
@@ -164,7 +164,8 @@ void ItemChooser::input(GUIEvent_t *ev) {
 				requestRedrawFull();
 			}
 			ev->type = EVENT_NONE;
-		}
+//		}
+	}
 		break;
 	default:
 		break;

@@ -1,6 +1,6 @@
 #include "button.hpp"
 
-Button::Button(const char *name, font_t font, void (*cb)(Widget&),
+Button::Button(const char *name, font_t font, void (*cb)(Widget*),
 		uint16_t minWidth) {
 	/* set name and callback */
 	uint16_t namelength = strlen(name);
@@ -35,12 +35,13 @@ void Button::draw(coords_t offset) {
     lowerRight.x += size.x - 1;
     lowerRight.y += size.y - 1;
     /* draw outline */
-	if (selected) {
-		display_SetForeground(COLOR_SELECTED);
-	} else if(selectable){
+//	if (selected) {
+//		display_SetForeground(COLOR_SELECTED);
+//	} else
+	if (selectable) {
 		display_SetForeground(Foreground);
 	} else {
-		display_SetForeground(COLOR_GRAY);
+		display_SetForeground(COLOR_LIGHTGRAY);
 	}
     display_VerticalLine(upperLeft.x, upperLeft.y + 1, size.y - 2);
     display_VerticalLine(lowerRight.x, upperLeft.y + 1, size.y - 2);
@@ -74,7 +75,7 @@ void Button::draw(coords_t offset) {
 		if (selectable) {
 			display_SetForeground(Foreground);
 		} else {
-			display_SetForeground(COLOR_GRAY);
+			display_SetForeground(COLOR_LIGHTGRAY);
 		}
 		display_SetBackground(Background);
 		display_SetFont(font);
@@ -102,7 +103,7 @@ void Button::input(GUIEvent_t *ev) {
 			pressed = false;
 			requestRedraw();
 			if (callback)
-				callback(*this);
+				callback(this);
 		}
 		break;
 //	case EVENT_BUTTON_CLICKED:

@@ -1,6 +1,6 @@
 #include "itemChooser.hpp"
 
-#include "common.hpp"
+#include "Unit.hpp"
 
 ItemChooser::ItemChooser(const char * const *items, uint8_t *value, font_t font,
 		uint8_t visibleLines, uint16_t minSizeX) {
@@ -89,10 +89,10 @@ void ItemChooser::draw(coords_t offset) {
 	display_SetForeground(Border);
 	display_VerticalLine(lowerRight.x - ScrollbarSize, upperLeft.y, size.y);
 	/* calculate beginning and end of scrollbar */
-	uint8_t scrollBegin = common_Map(topVisibleEntry, 0, numItems, 0, size.y);
+	uint8_t scrollBegin = util_Map(topVisibleEntry, 0, numItems, 0, size.y);
 	uint8_t scrollEnd = size.y;
 	if (numItems > lines) {
-		scrollEnd = common_Map(topVisibleEntry + lines, 0, numItems, 0, size.y);
+		scrollEnd = util_Map(topVisibleEntry + lines, 0, numItems, 0, size.y);
 	}
 	/* display position indicator */
 	display_SetForeground(ScrollbarColor);

@@ -11,8 +11,8 @@
 #include "widget.hpp"
 #include "display.h"
 #include "font.h"
-#include "common.hpp"
 #include "gui.hpp"
+#include "Unit.hpp"
 
 class Window : public Widget {
 public:

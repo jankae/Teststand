@@ -4,12 +4,13 @@
 #include "widget.hpp"
 #include "display.h"
 #include "font.h"
-#include "common.hpp"
+
+#include "Unit.hpp"
 
 class Entry : public Widget {
 public:
 	Entry(int32_t *value, const int32_t *max, const int32_t *min, font_t font,
-			uint8_t length, const unit_t *unit, const color_t c = COLOR_FG_DEFAULT);
+			uint8_t length, const Unit::unit *unit[], const color_t c = COLOR_FG_DEFAULT);
 	~Entry();
 
 	void setCallback(void (*cb)(Widget&)) {
@@ -32,7 +33,7 @@ private:
     const int32_t *max;
     const int32_t *min;
     font_t font;
-    const unit_t *unit;
+    const Unit::unit **unit;
     uint8_t length;
     color_t color;
 	bool editing;

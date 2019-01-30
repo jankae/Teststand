@@ -3,11 +3,12 @@
 
 #include "widget.hpp"
 #include "display.h"
-#include "common.hpp"
+
+#include "Unit.hpp"
 
 class Graph : public Widget {
 public:
-	Graph(const int32_t *values, uint16_t num, uint16_t height, color_t color, const unit_t *unit);
+	Graph(const int32_t *values, uint16_t num, uint16_t height, color_t color, const Unit::unit *unit[]);
 
 	void newColor(color_t color);
 	void newData(const int32_t *data);
@@ -21,7 +22,7 @@ private:
 
     const int32_t *values;
     color_t color;
-    const unit_t *unit;
+    const Unit::unit **unit;
 };
 
 #endif

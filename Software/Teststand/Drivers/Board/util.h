@@ -52,6 +52,9 @@ static inline int16_t constrain_int16_t(int16_t val, int16_t min, int16_t max) {
 	}
 }
 
+int32_t util_Map(int32_t value, int32_t scaleFromLow, int32_t scaleFromHigh,
+        int32_t scaleToLow, int32_t scaleToHigh);
+
 typedef struct coords {
 	int16_t x;
 	int16_t y;

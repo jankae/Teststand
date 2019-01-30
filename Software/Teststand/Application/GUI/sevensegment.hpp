@@ -5,7 +5,8 @@
 #include "display.h"
 //#include "font.h"
 
-#include "common.hpp"
+
+#include "Unit.hpp"
 //#include "dialog.h"
 
 class SevenSegment : public Widget {

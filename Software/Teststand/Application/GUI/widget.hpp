@@ -34,6 +34,8 @@ public:
 	Widget();
 	virtual ~Widget();
 
+	using Callback = void (*)(void*, Widget*);
+
 	static void draw(Widget *w, coords_t pos);
 	static void input(Widget *w, GUIEvent_t *ev);
 

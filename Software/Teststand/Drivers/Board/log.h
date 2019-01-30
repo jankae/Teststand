@@ -42,7 +42,7 @@ extern "C" {
 // if LevelDebug is omitted from this mask,
 // debug message will not be logged regardless
 // of individual source settings
-#define Global_Level_Mask (LevelAll)
+#define Global_Level_Mask (LevelAll&~LevelDebug)
 
 #define LOG(source, level, message, ...) do { \
     if (source & level & Global_Level_Mask) { \

@@ -37,7 +37,7 @@ static void loadcelltask(void *ptr) {
 				if (Loadcells::enabled[i]) {
 					auto& cell = Loadcells::cells[i];
 					cell.raw = max11254_read_result(&max, i);
-					cell.gram = (cell.raw - cell.offset) * cell.scale;
+					cell.mgram = (cell.raw - cell.offset) * cell.scale;
 				}
 			}
 			max11254_scan_conversion_static_gpio(&max, samplingRate,
@@ -76,6 +76,11 @@ bool Loadcells::Init() {
 	vTaskDelay(10);
 	if (max11254_init(&max) != MAX11254_RES_OK) {
 		return false;
+	}
+
+	for(auto &i : cells) {
+		i.offset = 0;
+		i.scale = 1.0f;
 	}
 
 	if(xTaskCreate(loadcelltask, "MAX11254", 256, nullptr, 4, &handle)

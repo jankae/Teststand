@@ -1,6 +1,7 @@
 #include "container.hpp"
 #include "log.h"
-#include "common.hpp"
+
+#include "Unit.hpp"
 
 Container::Container(coords_t size) {
 	this->size = size;
@@ -46,10 +47,10 @@ void Container::attach(Widget *w, coords_t offset) {
 	}
 	/* adjust scroll bar sizes */
 	if (scrollHorizontal)
-		scrollBarLength.x = common_Map(viewingSize.x, 0, canvasSize.x, 0,
+		scrollBarLength.x = util_Map(viewingSize.x, 0, canvasSize.x, 0,
 				viewingSize.x);
 	if (scrollVertical)
-		scrollBarLength.y = common_Map(viewingSize.y, 0, canvasSize.y, 0,
+		scrollBarLength.y = util_Map(viewingSize.y, 0, canvasSize.y, 0,
 				viewingSize.y);
 }
 
@@ -82,7 +83,7 @@ void Container::draw(coords_t offset) {
 		display_VerticalLine(offset.x + size.x - ScrollbarSize, offset.y,
 				size.y);
 		/* calculate beginning of scrollbar */
-		uint8_t scrollBegin = common_Map(canvasOffset.y, 0, canvasSize.y, 0,
+		uint8_t scrollBegin = util_Map(canvasOffset.y, 0, canvasSize.y, 0,
 				size.y - ScrollbarSize * scrollHorizontal);
 		/* display position indicator */
 		display_SetForeground (ScrollbarColor);
@@ -95,7 +96,7 @@ void Container::draw(coords_t offset) {
 		display_HorizontalLine(offset.x, offset.y + size.y - ScrollbarSize,
 				size.x);
 		/* calculate beginning of scrollbar */
-		uint8_t scrollBegin = common_Map(canvasOffset.x, 0, canvasSize.x, 0,
+		uint8_t scrollBegin = util_Map(canvasOffset.x, 0, canvasSize.x, 0,
 				size.x - ScrollbarSize * scrollVertical);
 		/* display position indicator */
 		display_SetForeground (ScrollbarColor);
@@ -118,7 +119,7 @@ void Container::input(GUIEvent_t *ev) {
 				ev->pos.y = ev->dragged.y;
 			}
 			/* adjust vertical canvas offset */
-			canvasOffset.y = common_Map(ev->pos.y, scrollBarLength.y / 2,
+			canvasOffset.y = util_Map(ev->pos.y, scrollBarLength.y / 2,
 					viewingSize.y - scrollBarLength.y / 2, 0,
 					canvasSize.y - viewingSize.y);
 			/* constrain offset */
@@ -134,7 +135,7 @@ void Container::input(GUIEvent_t *ev) {
 				ev->pos.x = ev->dragged.x;
 			}
 			/* adjust horizontal canvas offset */
-			canvasOffset.x = common_Map(ev->pos.x, scrollBarLength.x / 2,
+			canvasOffset.x = util_Map(ev->pos.x, scrollBarLength.x / 2,
 					viewingSize.x - scrollBarLength.x / 2, 0,
 					canvasSize.x - viewingSize.x);
 			/* constrain offset */
@@ -273,8 +274,8 @@ void Container::drawChildren(coords_t offset) {
 //            break;
 //    }
 
-//	display_SetActiveArea(offset.x, offset.x + viewingSize.x, offset.y,
-//			offset.y + viewingSize.y);
+	display_SetActiveArea(offset.x, offset.x + viewingSize.x - 1, offset.y,
+			offset.y + viewingSize.y - 1);
 
 	offset.x -= canvasOffset.x;
     offset.y -= canvasOffset.y;

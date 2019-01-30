@@ -27,3 +27,15 @@ uint32_t unixtime(int year, int month, int day,
 
   return sec + 60 * ( minute + 60 * (hour + 24*days_since_1970) );
 }
+
+
+int32_t util_Map(int32_t value, int32_t scaleFromLow, int32_t scaleFromHigh,
+		int32_t scaleToLow, int32_t scaleToHigh) {
+	int32_t result;
+	value -= scaleFromLow;
+	int32_t rangeFrom = scaleFromHigh - scaleFromLow;
+	int32_t rangeTo = scaleToHigh - scaleToLow;
+	result = ((int64_t) value * rangeTo) / rangeFrom;
+	result += scaleToLow;
+	return result;
+}

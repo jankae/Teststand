@@ -24,7 +24,7 @@ void ProgressBar::draw(coords_t offset) {
     display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 
     /* calculate end of bar */
-    uint16_t end = common_Map(state, 0, 100, 1, size.x - 2);
+    uint16_t end = util_Map(state, 0, 100, 1, size.x - 2);
 
     /* draw the bar */
     display_SetForeground(Bar);

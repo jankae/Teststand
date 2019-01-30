@@ -35,7 +35,9 @@ Window::~Window() {
 	ev.w = this;
 	GUI::SendEvent(&ev);
 
-	delete title;
+	if (title) {
+		delete title;
+	}
 }
 
 void Window::setMainWidget(Widget *w) {

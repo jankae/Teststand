@@ -2,6 +2,8 @@
 #include "App.hpp"
 #include "gui.hpp"
 #include "Loadcells.hpp"
+#include "progress.hpp"
+#include "ValueInput.hpp"
 
 #include "log.h"
 
@@ -9,11 +11,28 @@ static Button *bZero[Loadcells::MaxCells];
 static Button *bCal[Loadcells::MaxCells];
 static TaskHandle_t handle;
 static uint8_t loadcell;
+static int32_t calibrationWeight;
 
 enum class Notification : uint32_t {
 	NewSettings,
 	ZeroLoadcell,
+	WeightLoadcell,
+	CalLoadcell,
 };
+
+static int32_t sampleLoadcell(uint8_t cell) {
+	constexpr uint16_t samples = 100;
+	constexpr uint32_t deltaT = pdMS_TO_TICKS(20);
+	auto p = new ProgressDialog("Sampling...", 0);
+	int32_t sum = 0;
+	for(uint16_t i=0;i<samples;i++) {
+		sum += Loadcells::cells[cell].raw;
+		p->SetPercentage(i * 100 / samples);
+		vTaskDelay(deltaT);
+	}
+	delete p;
+	return sum / samples;
+}
 
 void Settings::Task(void *a) {
 	App *app = (App*) a;
@@ -41,10 +60,10 @@ void Settings::Task(void *a) {
 						eSetValueWithOverwrite);
 			}
 		}, COORDS(19, 19));
-		eRaw[i] = new Entry(&Loadcells::cells[i].raw, nullptr, nullptr,
-				Font_Big, 7, &Unit_None);
+		eRaw[i] = new Entry(&Loadcells::cells[i].mgram, nullptr, nullptr,
+				Font_Big, 7, Unit::None);
 		eRaw[i]->setSelectable(false);
-		bZero[i] = new Button("Zero", Font_Big,	[](Widget* w) {
+		bZero[i] = new Button("Zero", Font_Big,	[](void*, Widget* w) {
 			for (loadcell = 0; loadcell < Loadcells::MaxCells; loadcell++) {
 				if (w == bZero[loadcell]) {
 					if (handle) {
@@ -54,8 +73,18 @@ void Settings::Task(void *a) {
 					break;
 				}
 			}
-		}, 0);
-		bCal[i] = new Button("Cal", Font_Big, nullptr, 0);
+		}, nullptr);
+		bCal[i] = new Button("Cal", Font_Big, [](void*, Widget* w) {
+			for (loadcell = 0; loadcell < Loadcells::MaxCells; loadcell++) {
+				if (w == bCal[loadcell]) {
+					if (handle) {
+						xTaskNotify(handle, (uint32_t ) Notification::WeightLoadcell,
+								eSetValueWithOverwrite);
+					}
+					break;
+				}
+			}
+		}, nullptr);
 		bZero[i]->setSelectable(Loadcells::enabled[i]);
 		bCal[i]->setSelectable(Loadcells::enabled[i]);
 		uint16_t yOffset = 18 + i * 23;
@@ -79,6 +108,28 @@ void Settings::Task(void *a) {
 					Loadcells::Setup(MAX11254_RATE_CONT1_9_SINGLE50);
 				}
 				break;
+			case Notification::ZeroLoadcell:
+				Loadcells::cells[loadcell].offset = sampleLoadcell(loadcell);
+				break;
+			case Notification::WeightLoadcell: {
+				new ValueInput("Calibration weight?", &calibrationWeight, Unit::Weight,
+						[](void*, bool confirmed) {
+					if(confirmed) {
+						if (handle) {
+							xTaskNotify(handle, (uint32_t ) Notification::CalLoadcell,
+									eSetValueWithOverwrite);
+						}
+					}
+				}, nullptr);
+			}
+				break;
+			case Notification::CalLoadcell: {
+				int32_t raw = sampleLoadcell(loadcell);
+				int32_t lsb = raw - Loadcells::cells[loadcell].offset;
+				Loadcells::cells[loadcell].scale = (float) calibrationWeight
+						/ lsb;
+			}
+
 			}
 		}
 		for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {

@@ -12,9 +12,6 @@
 
 #include "gui.hpp"
 
-static StaticTask_t xTask;
-static StackType_t xStack[Input::task_stack];
-
 // TODO remove hardcoded value, save to file instead
 static int32_t offsetX = -30;
 static int32_t offsetY = -27;
@@ -117,8 +114,7 @@ static void inputThread(void *ptr) {
 }
 
 bool Input::Init() {
-	xTaskCreateStatic(inputThread, "INPUT", task_stack, nullptr, 5, xStack,
-			&xTask);
+	xTaskCreate(inputThread, "INPUT", 256, nullptr, 5, nullptr);
 	return true;
 }
 

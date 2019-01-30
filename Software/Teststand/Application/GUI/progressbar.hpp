@@ -3,7 +3,8 @@
 
 #include "widget.hpp"
 #include "display.h"
-#include "common.hpp"
+
+#include "Unit.hpp"
 
 class ProgressBar : public Widget {
 public:

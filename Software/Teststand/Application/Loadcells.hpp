@@ -12,7 +12,7 @@ using Cell = struct cell {
 	int32_t raw;
 	int32_t offset;
 	float scale;
-	float gram;
+	int32_t mgram;
 };
 
 extern std::array<Cell, MaxCells> cells;

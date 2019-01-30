@@ -4,11 +4,14 @@
 #include "widget.hpp"
 #include "display.h"
 #include "font.h"
-#include "common.hpp"
+
+#include "Unit.hpp"
 
 class Button : public Widget {
 public:
-	Button(const char *name, font_t font, void (*cb)(Widget*), uint16_t minWidth = 0);
+
+	Button(const char *name, font_t font, Callback cb, void *ptr,
+			coords_t minSize = COORDS(0, 0));
 	~Button();
 
 	char *getName() {
@@ -23,7 +26,8 @@ private:
 	static constexpr color_t Foreground = COLOR_BLACK;
 	static constexpr color_t Background = COLOR_BG_DEFAULT;
 
-    void (*callback)(Widget* source);
+    Callback cb;
+    void *ptr;
     char *name;
     font_t font;
     coords_t fontStart;

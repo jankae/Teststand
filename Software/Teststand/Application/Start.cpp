@@ -8,10 +8,10 @@
 #include "input.hpp"
 #include "desktop.hpp"
 #include "gui.hpp"
-#include "Settings.hpp"
 #include "file.hpp"
 #include "touch.hpp"
 #include "Loadcells.hpp"
+#include "LoadcellSetup.hpp"
 
 extern ADC_HandleTypeDef hadc1;
 //extern SPI_HandleTypeDef hspi1;
@@ -77,6 +77,7 @@ constexpr Test Selftests[] = {
 		{"MAX11254 init", Frontend_init},
 //		{"MAX11254 measurement", Frontend_measurement},
 		{"SD card mount", SDCardMount},
+		{"Load touch cal.", Input::LoadCalibration},
 };
 constexpr uint8_t nTests = sizeof(Selftests) / sizeof(Selftests[0]);
 
@@ -131,11 +132,11 @@ void Start() {
 //	Input::Calibrate();
 	Desktop d;
 	App::Info app;
-	app.task = Settings::Task;
+	app.task = LoadcellSetup::Task;
 	app.StackSize = 256;
-	app.name = "Settings";
-	app.descr = "Edit device settings";
-	app.icon = &Settings::Icon;
+	app.name = "Loadcell setup";
+	app.descr = "Calibrate and configure loadcells";
+	app.icon = &LoadcellSetup::Icon;
 	App(app, d);
 	GUI::Init(d);
 

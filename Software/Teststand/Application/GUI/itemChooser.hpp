@@ -18,10 +18,10 @@ private:
 
 	Widget::Type getType() override { return Widget::Type::ItemChooser; };
 
-	static constexpr uint8_t ScrollbarSize = 8;
+	static constexpr uint8_t ScrollbarSize = 20;
 	static constexpr color_t ScrollbarColor = COLOR_ORANGE;
 	static constexpr color_t Border = COLOR_FG_DEFAULT;
-	static constexpr color_t Selected = COLOR(100, 100, 100);
+	static constexpr color_t Selected = COLOR_LIGHTGRAY;
 	static constexpr color_t Background = COLOR_BG_DEFAULT;
 
     uint8_t *value;

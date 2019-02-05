@@ -1,4 +1,3 @@
-#include "Settings.hpp"
 #include "App.hpp"
 #include "gui.hpp"
 #include "Loadcells.hpp"
@@ -6,6 +5,7 @@
 #include "ValueInput.hpp"
 
 #include "log.h"
+#include "LoadcellSetup.hpp"
 
 static Button *bZero[Loadcells::MaxCells];
 static Button *bCal[Loadcells::MaxCells];
@@ -18,6 +18,7 @@ enum class Notification : uint32_t {
 	ZeroLoadcell,
 	WeightLoadcell,
 	CalLoadcell,
+	NewRate,
 };
 
 static int32_t sampleLoadcell(uint8_t cell) {
@@ -34,7 +35,7 @@ static int32_t sampleLoadcell(uint8_t cell) {
 	return sum / samples;
 }
 
-void Settings::Task(void *a) {
+void LoadcellSetup::Task(void *a) {
 	App *app = (App*) a;
 	LOG(Log_App, LevelInfo, "Settings task");
 	handle = xTaskGetCurrentTaskHandle();
@@ -94,6 +95,19 @@ void Settings::Task(void *a) {
 		c->attach(bZero[i], COORDS(135, yOffset - 2));
 		c->attach(bCal[i], COORDS(190, yOffset - 2));
 	}
+	const char * const items[] = { "50", "62.5",
+			"100", "125", "200", "250", "400", "500", "800", "1000", nullptr};
+	uint8_t itemValue = (int) Loadcells::rate;
+	auto iRate = new ItemChooser(items, &itemValue, Font_Big, 10, 80);
+	iRate->setCallback([](Widget &w) {
+		if (handle) {
+			xTaskNotify(handle, (uint32_t ) Notification::NewRate,
+					eSetValueWithOverwrite);
+		}
+	});
+	l = new Label("Rate:", Font_Big);
+	c->attach(l, COORDS(0, 155));
+	c->attach(iRate, COORDS(2, 173));
 
 	app->StartComplete(c);
 
@@ -105,7 +119,7 @@ void Settings::Task(void *a) {
 				for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {
 					bZero[i]->setSelectable(Loadcells::enabled[i]);
 					bCal[i]->setSelectable(Loadcells::enabled[i]);
-					Loadcells::Setup(MAX11254_RATE_CONT1_9_SINGLE50);
+					Loadcells::UpdateSettings();
 				}
 				break;
 			case Notification::ZeroLoadcell:
@@ -129,7 +143,11 @@ void Settings::Task(void *a) {
 				Loadcells::cells[loadcell].scale = (float) calibrationWeight
 						/ lsb;
 			}
-
+				break;
+			case Notification::NewRate: {
+				Loadcells::rate = (max11254_rate_t) itemValue;
+				Loadcells::UpdateSettings();
+			}
 			}
 		}
 		for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {
@@ -143,4 +161,7 @@ void Settings::Task(void *a) {
 			vTaskDelete(nullptr);
 		}
 	}
+}
+
+void LoadcellSetup::LoadFromCard() {
 }

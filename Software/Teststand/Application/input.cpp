@@ -18,7 +18,7 @@ static int32_t offsetY = -27;
 static float scaleX = 0.0932;//(float) DISPLAY_WIDTH / 4096;
 static float scaleY = 0.0677;//(float) DISPLAY_HEIGHT / 4096;
 
-const File::Entry touchCal[4] = {
+static constexpr File::Entry touchCal[4] = {
 		{"xfactor", &scaleX, File::PointerType::FLOAT},
 		{"xoffset", &offsetX, File::PointerType::INT32},
 		{"yfactor", &scaleY, File::PointerType::FLOAT},
@@ -161,6 +161,18 @@ static coords_t GetCalibrationPoint(bool top, coords_t cross) {
 	return ret;
 }
 
+static bool SaveCalibration(void) {
+	if (File::Open("TOUCH.CAL", FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {
+		LOG(Log_Input, LevelError, "Failed to create calibration file");
+		return false;
+	}
+	File::WriteParameters(touchCal, 4);
+	File::Close();
+	LOG(Log_Input, LevelInfo, "Created calibration file");
+	return true;
+}
+
+
 void Input::Calibrate() {
 	Touch::ClearPENCallback();
 	coords_t Set1 = { .x = 20, .y = 20 };
@@ -174,5 +186,28 @@ void Input::Calibrate() {
 	offsetX = Set1.x - Meas1.x * scaleX;
 	offsetY = Set1.y - Meas1.y * scaleY;
 
-	// TODO trigger GUI display content redraw
+	GUIEvent_t ev;
+	ev.type = EVENT_WINDOW_CLOSE;
+	GUI::SendEvent(&ev);
+
+	if(!SaveCalibration()) {
+		Dialog::MessageBox("ERROR", Font_Big,
+				"Failed to save touch calibration", Dialog::MsgBox::OK, nullptr,
+				true);
+	}
+}
+
+bool Input::LoadCalibration() {
+	if (File::Open("TOUCH.CAL", FA_OPEN_EXISTING | FA_READ) != FR_OK) {
+		LOG(Log_Input, LevelError, "Failed to open calibration file");
+		return false;
+	}
+	if (File::ReadParameters(touchCal, 4) != File::ParameterResult::OK) {
+		LOG(Log_Input, LevelError, "Calibration file incomplete");
+		File::Close();
+		return false;
+	} else {
+		File::Close();
+		return true;
+	}
 }

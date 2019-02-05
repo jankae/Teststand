@@ -17,8 +17,9 @@ using Cell = struct cell {
 
 extern std::array<Cell, MaxCells> cells;
 extern std::array<bool, MaxCells> enabled;
+extern max11254_rate_t rate;
 
 bool Init();
-void Setup(max11254_rate_t rate);
+void UpdateSettings();
 
 }

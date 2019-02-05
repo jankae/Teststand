@@ -241,7 +241,7 @@ void display_Clear() {
 	}
 }
 
-void display_Pixel(uint16_t x, uint16_t y, uint16_t color) {
+void display_Pixel(int16_t x, int16_t y, uint16_t color) {
 	if (x >= active.minX && x <= active.maxX && y >= active.minY
 			&& y <= active.maxY) {
 		setXY(x, y, x, y);
@@ -249,7 +249,7 @@ void display_Pixel(uint16_t x, uint16_t y, uint16_t color) {
 	}
 }
 
-void display_HorizontalLine(uint16_t x, uint16_t y, uint16_t length) {
+void display_HorizontalLine(int16_t x, int16_t y, uint16_t length) {
 	if (y >= active.minY && y <= active.maxY && x <= active.maxX && x + length > active.minX) {
 		if (x < active.minX) {
 			length -= active.minX - x;
@@ -265,7 +265,7 @@ void display_HorizontalLine(uint16_t x, uint16_t y, uint16_t length) {
 	}
 }
 
-void display_VerticalLine(uint16_t x, uint16_t y, uint16_t length) {
+void display_VerticalLine(int16_t x, int16_t y, uint16_t length) {
 	if (x >= active.minX && x <= active.maxX && y <= active.maxY && y + length > active.minY) {
 		if (y < active.minY) {
 			length -= active.minY - y;
@@ -281,7 +281,7 @@ void display_VerticalLine(uint16_t x, uint16_t y, uint16_t length) {
 	}
 }
 
-void display_Line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+void display_Line(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
 	uint16_t dx = abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
 	uint16_t dy = abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
 	int16_t err = (dx > dy ? dx : -dy) / 2, e2;
@@ -302,14 +302,14 @@ void display_Line(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
 	}
 }
 
-void display_Rectangle(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) {
+void display_Rectangle(int16_t x0, int16_t y0, int16_t x1, int16_t y1) {
 	display_VerticalLine(x0, y0, y1 - y0);
 	display_VerticalLine(x1, y0 + 1, y1 - y0);
 	display_HorizontalLine(x0 + 1, y0, x1 - x0);
 	display_HorizontalLine(x0, y1, x1 - x0);
 }
 
-void display_RectangleFull(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1){
+void display_RectangleFull(int16_t x0, int16_t y0, int16_t x1, int16_t y1){
 	if(x0 > active.maxX || y0 > active.maxY || x1 < active.minX || y1 < active.minY) {
 		/* completely out of active area, skip */
 		return;
@@ -333,7 +333,7 @@ void display_RectangleFull(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1){
 	}
 }
 
-void display_Circle(uint16_t x0, uint16_t y0, uint16_t radius)
+void display_Circle(int16_t x0, int16_t y0, uint16_t radius)
 {
     int x = radius;
     int y = 0;
@@ -361,7 +361,7 @@ void display_Circle(uint16_t x0, uint16_t y0, uint16_t radius)
     }
 }
 
-void display_CircleFull(uint16_t x0, uint16_t y0, uint16_t radius) {
+void display_CircleFull(int16_t x0, int16_t y0, uint16_t radius) {
 	for (int y = -radius; y <= radius; y++)
 		for (int x = -radius; x <= radius; x++)
 			if (x * x + y * y <= radius * radius)
@@ -369,7 +369,7 @@ void display_CircleFull(uint16_t x0, uint16_t y0, uint16_t radius) {
 }
 
 
-void display_Char(uint16_t x, uint16_t y, uint8_t c) {
+void display_Char(int16_t x, int16_t y, uint8_t c) {
 	if(x > active.maxX || y > active.maxY || x + font.width < active.minX || y + font.height < active.minY) {
 		/* Character completely out of active area, skip */
 		return;
@@ -412,7 +412,7 @@ void display_Char(uint16_t x, uint16_t y, uint8_t c) {
 	}
 }
 
-void display_String(uint16_t x, uint16_t y, const char *s) {
+void display_String(int16_t x, int16_t y, const char *s) {
 	while (*s) {
 		display_Char(x, y, *s++);
 		x += font.width;
@@ -421,7 +421,7 @@ void display_String(uint16_t x, uint16_t y, const char *s) {
 	}
 }
 
-void display_Image(uint16_t x, uint16_t y, const Image_t *im) {
+void display_Image(int16_t x, int16_t y, const Image_t *im) {
 //	usb_DisplayCommand(0, x);
 //	usb_DisplayCommand(1, y);
 //	usb_DisplayCommand(2, x + im->width - 1);
@@ -434,7 +434,7 @@ void display_Image(uint16_t x, uint16_t y, const Image_t *im) {
 //		usb_DisplayCommand(4, *ptr++);
 	}
 }
-void display_ImageGrayscale(uint16_t x, uint16_t y, const Image_t *im){
+void display_ImageGrayscale(int16_t x, int16_t y, const Image_t *im){
 	//	usb_DisplayCommand(0, x);
 	//	usb_DisplayCommand(1, y);
 	//	usb_DisplayCommand(2, x + im->width - 1);

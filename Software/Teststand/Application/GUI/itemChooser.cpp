@@ -37,12 +37,12 @@ void ItemChooser::draw(coords_t offset) {
 		*value = numItems - 1;
 	}
 
-	/* Update visible entry offset */
-	if (*value < topVisibleEntry) {
-		topVisibleEntry = *value;
-	} else if (*value >= topVisibleEntry + lines) {
-		topVisibleEntry = *value - lines + 1;
-	}
+//	/* Update visible entry offset */
+//	if (*value < topVisibleEntry) {
+//		topVisibleEntry = *value;
+//	} else if (*value >= topVisibleEntry + lines) {
+//		topVisibleEntry = *value - lines + 1;
+//	}
 
 	/* calculate corners */
 	coords_t upperLeft = offset;
@@ -145,10 +145,8 @@ void ItemChooser::input(GUIEvent_t *ev) {
 //			ev->type = EVENT_NONE;
 //		}
 //		break;
-	case EVENT_TOUCH_PRESSED: {
-//		if (selected) {
-			/* only react to touch if already selected. This allows
-			 * the user to select the widget without already changing the value */
+	case EVENT_TOUCH_PRESSED:
+		if(ev->pos.x < size.x - ScrollbarSize) {
 			int16_t newVal = topVisibleEntry
 					+ (ev->pos.y - 2) / font.height;
 			if (newVal < 0) {
@@ -164,8 +162,29 @@ void ItemChooser::input(GUIEvent_t *ev) {
 				requestRedrawFull();
 			}
 			ev->type = EVENT_NONE;
-//		}
-	}
+		}
+		/* no break */
+	case EVENT_TOUCH_DRAGGED:
+		if(ev->pos.x >= size.x - ScrollbarSize) {
+			/* Get number of items */
+			uint8_t numItems;
+			for (numItems = 0; itemlist[numItems]; numItems++)
+				;
+			int16_t scrollBarLength = size.y * lines / numItems;
+			/* adjust horizontal canvas offset */
+			if (ev->type == EVENT_TOUCH_DRAGGED) {
+				ev->pos.y = ev->dragged.y;
+			}
+			int16_t newOffset = util_Map(ev->pos.y, scrollBarLength / 2,
+					size.y - scrollBarLength / 2, 0,
+					numItems - lines);
+			newOffset = constrain_int16_t(newOffset, 0, numItems - lines);
+			if(newOffset != topVisibleEntry) {
+				topVisibleEntry = newOffset;
+				requestRedrawFull();
+			}
+			ev->type = EVENT_NONE;
+		}
 		break;
 	default:
 		break;

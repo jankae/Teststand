@@ -10,7 +10,8 @@ enum class PointerType : uint8_t {
 	INT16,
 	INT32,
 	FLOAT,
-	STRING
+	STRING,
+	BOOL
 };
 
 enum class ParameterResult : uint8_t {
@@ -19,7 +20,7 @@ enum class ParameterResult : uint8_t {
 	Error,
 };
 
-using Entry = struct {
+using Entry = struct entry {
 	const char *name;
 	void *ptr;
 	PointerType type;
@@ -30,5 +31,7 @@ FRESULT Open(const char *filename, BYTE mode);
 FRESULT Close(void);
 bool ReadLine(char *dest, uint16_t maxLen);
 int WriteLine(const char *line);
+void WriteParameters(const Entry *paramList, uint8_t length);
+ParameterResult ReadParameters(const Entry *paramList, uint8_t length);
 
 }

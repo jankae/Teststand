@@ -4,14 +4,13 @@
 #include "task.h"
 #include "log.h"
 
-static max11254_rate_t samplingRate = MAX11254_RATE_CONT1_9_SINGLE50;
-
 static TaskHandle_t handle;
 extern SPI_HandleTypeDef hspi1;
 static max11254_t max;
 
 std::array<Loadcells::Cell, Loadcells::MaxCells> Loadcells::cells;
 std::array<bool, Loadcells::MaxCells> Loadcells::enabled;
+max11254_rate_t Loadcells::rate = MAX11254_RATE_CONT1_9_SINGLE50;
 
 enum class Notification : uint32_t {
 	NewSample,
@@ -40,7 +39,7 @@ static void loadcelltask(void *ptr) {
 					cell.mgram = (cell.raw - cell.offset) * cell.scale;
 				}
 			}
-			max11254_scan_conversion_static_gpio(&max, samplingRate,
+			max11254_scan_conversion_static_gpio(&max, Loadcells::rate,
 					conversionComplete, nullptr);
 			break;
 		case Notification::NewSettings:
@@ -58,7 +57,7 @@ static void loadcelltask(void *ptr) {
 				}
 			}
 			if (order > 1) {
-				max11254_scan_conversion_static_gpio(&max, samplingRate,
+				max11254_scan_conversion_static_gpio(&max, Loadcells::rate,
 						conversionComplete, nullptr);
 			}
 		}
@@ -91,8 +90,7 @@ bool Loadcells::Init() {
 	return true;
 }
 
-void Loadcells::Setup(max11254_rate_t rate) {
-	samplingRate = rate;
+void Loadcells::UpdateSettings() {
 	if (handle) {
 		xTaskNotify(handle, (uint32_t ) Notification::NewSettings,
 				eSetValueWithOverwrite);

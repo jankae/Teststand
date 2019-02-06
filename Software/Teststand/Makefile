@@ -49,6 +49,7 @@ Drivers/Board/MAX11254 \
 Drivers/Board/Display \
 Application/GUI \
 Application/GUI/Dialog \
+Application/Driver
 
 # Build path
 BUILD_DIR = build
@@ -133,7 +134,8 @@ C_INCLUDES =  \
 -IDrivers/Board/MAX11254 \
 -IDrivers/Board/Display \
 -IApplication/GUI \
--IApplication/GUI/Dialog
+-IApplication/GUI/Dialog \
+-IApplication/Driver
 
 
 # compile gcc flags

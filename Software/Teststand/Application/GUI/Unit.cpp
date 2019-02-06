@@ -61,8 +61,8 @@ const Unit::unit *Unit::Charge[] = { &uAh, &mAh, &Ah, nullptr };
 const Unit::unit *Unit::Weight[] = { &mg, &g, &kg, nullptr };
 const Unit::unit *Unit::None[] = {&none, nullptr };
 
-const int32_t null = 0;
-const int32_t maxPercent = 100000000;
+const int32_t Unit::null = 0;
+const int32_t Unit::maxPercent = 100000000;
 
 uint32_t Unit::LeastDigitValueFromString(const char *s,
 		const Unit::unit *unit[]) {

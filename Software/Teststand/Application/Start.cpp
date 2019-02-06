@@ -12,6 +12,7 @@
 #include "touch.hpp"
 #include "Loadcells.hpp"
 #include "LoadcellSetup.hpp"
+#include "PPMDriver.hpp"
 
 extern ADC_HandleTypeDef hadc1;
 //extern SPI_HandleTypeDef hspi1;
@@ -141,6 +142,7 @@ void Start() {
 	GUI::Init(d);
 
 
+	auto driver = new PPMDriver();
 	while(1) {
 		vTaskDelay(1000);
 	}

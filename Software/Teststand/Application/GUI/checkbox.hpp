@@ -8,7 +8,8 @@
 
 class Checkbox : public Widget {
 public:
-	Checkbox(bool *value, void (*cb)(Widget*), coords_t size = COORDS(29, 29));
+	using Callback = void (*)(void *, Widget*);
+	Checkbox(bool *value, Callback cb, void *ptr, coords_t size = COORDS(29, 29));
 
 private:
 	void draw(coords_t offset) override;
@@ -20,8 +21,10 @@ private:
 	static constexpr color_t Border = COLOR_FG_DEFAULT;
 	static constexpr color_t Ticked = COLOR(0, 192, 0);
 	static constexpr color_t Unticked = COLOR(238, 0, 0);
+	static constexpr color_t Unselectable = COLOR_LIGHTGRAY;
 
-    void (*callback)(Widget* source);
+    Callback cb;
+    void *cbptr;
     bool *value;
 };
 

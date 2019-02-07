@@ -9,17 +9,20 @@
 
 class Entry : public Widget {
 public:
+	using Callback = void (*)(void *, Widget*);
 	Entry(int32_t *value, const int32_t *max, const int32_t *min, font_t font,
 			uint8_t length, const Unit::unit *unit[], const color_t c = COLOR_FG_DEFAULT);
 	~Entry();
 
-	void setCallback(void (*cb)(Widget&)) {
-		changeCallback = cb;
+	void setCallback(Callback cb, void *ptr) {
+		this->cb = cb;
+		cbptr = ptr;
 	}
 
 private:
 	int32_t constrainValue(int32_t val);
 	int32_t InputStringValue(uint32_t multiplier);
+	void ValueInputCallback(bool updated);
 
 	void draw(coords_t offset) override;
 	void input(GUIEvent_t *ev) override;
@@ -38,7 +41,8 @@ private:
     color_t color;
 	bool editing;
 	bool dotSet;
-	void (*changeCallback)(Widget&);
+	Callback cb;
+	void *cbptr;
 	uint8_t editPos;
     char *inputString;
 };

@@ -5,7 +5,8 @@
 ItemChooser::ItemChooser(const char * const *items, uint8_t *value, font_t font,
 		uint8_t visibleLines, uint16_t minSizeX) {
 	/* set member variables */
-	changeCallback = NULL;
+	changeCallback = nullptr;
+	cbptr = nullptr;
 	this->font = font;
 	this->itemlist = items;
 	this->value = value;
@@ -121,7 +122,7 @@ void ItemChooser::input(GUIEvent_t *ev) {
 		if (*value != newVal) {
 			*value = newVal;
 			if (changeCallback) {
-				changeCallback(*this);
+				changeCallback(cbptr, this);
 			}
 			requestRedrawFull();
 		}
@@ -157,7 +158,7 @@ void ItemChooser::input(GUIEvent_t *ev) {
 			if (*value != newVal) {
 				*value = newVal;
 				if (changeCallback) {
-					changeCallback(*this);
+					changeCallback(cbptr, this);
 				}
 				requestRedrawFull();
 			}

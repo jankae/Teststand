@@ -55,12 +55,11 @@ void LoadcellSetup::Task(void *a) {
 		number[1] = ':';
 		number[2] = 0;
 		lNumbers[i] = new Label(number, Font_Big);
-		cEnabled[i] = new Checkbox(&Loadcells::enabled[i], [](Widget* w) {
-			if (handle) {
-				xTaskNotify(handle, (uint32_t ) Notification::NewSettings,
-						eSetValueWithOverwrite);
-			}
-		}, COORDS(19, 19));
+		cEnabled[i] = new Checkbox(&Loadcells::enabled[i],
+				[](void *ptr, Widget* w) {
+					xTaskNotify(ptr, (uint32_t ) Notification::NewSettings,
+							eSetValueWithOverwrite);
+				}, xTaskGetCurrentTaskHandle(), COORDS(19, 19));
 		eRaw[i] = new Entry(&Loadcells::cells[i].mgram, nullptr, nullptr,
 				Font_Big, 7, Unit::None);
 		eRaw[i]->setSelectable(false);
@@ -99,12 +98,10 @@ void LoadcellSetup::Task(void *a) {
 			"100", "125", "200", "250", "400", "500", "800", "1000", nullptr};
 	uint8_t itemValue = (int) Loadcells::rate;
 	auto iRate = new ItemChooser(items, &itemValue, Font_Big, 10, 80);
-	iRate->setCallback([](Widget &w) {
-		if (handle) {
-			xTaskNotify(handle, (uint32_t ) Notification::NewRate,
-					eSetValueWithOverwrite);
-		}
-	});
+	iRate->setCallback([](void *ptr, Widget *w) {
+		xTaskNotify(ptr, (uint32_t ) Notification::NewRate,
+				eSetValueWithOverwrite);
+	}, xTaskGetCurrentTaskHandle());
 	l = new Label("Rate:", Font_Big);
 	c->attach(l, COORDS(0, 155));
 	c->attach(iRate, COORDS(2, 173));

@@ -23,9 +23,9 @@ public:
 	};
 
 	enum class ControlMode : uint8_t {
-		Percentage,
-		RPM,
-		Thrust,
+		Percentage = 0,
+		RPM = 1,
+		Thrust = 2,
 	};
 
 	using Readback = struct readback {

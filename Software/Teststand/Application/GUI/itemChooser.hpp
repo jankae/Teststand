@@ -9,8 +9,10 @@ public:
 	ItemChooser(const char * const *items, uint8_t *value, font_t font,
 			uint8_t visibleLines, uint16_t minSizeX = 0);
 
-	void setCallback(void (*cb)(Widget&)) {
+	using Callback = void (*)(void *ptr, Widget *w);
+	void setCallback(Callback cb, void *ptr) {
 		changeCallback = cb;
+		cbptr = ptr;
 	}
 private:
 	void draw(coords_t offset) override;
@@ -28,7 +30,8 @@ private:
     const char * const * itemlist;
     font_t font;
     uint8_t lines;
-    void (*changeCallback)(Widget&);
+    Callback changeCallback;
+    void *cbptr;
     uint8_t topVisibleEntry;
 };
 

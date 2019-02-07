@@ -12,7 +12,7 @@
 #include "touch.hpp"
 #include "Loadcells.hpp"
 #include "LoadcellSetup.hpp"
-#include "PPMDriver.hpp"
+#include "DriverControl.hpp"
 
 extern ADC_HandleTypeDef hadc1;
 //extern SPI_HandleTypeDef hspi1;
@@ -138,11 +138,17 @@ void Start() {
 	app.name = "Loadcell setup";
 	app.descr = "Calibrate and configure loadcells";
 	app.icon = &LoadcellSetup::Icon;
-	App(app, d);
+	new App(app, d);
+	App::Info app2;
+	app2.task = DriverControl::Task;
+	app2.StackSize = 256;
+	app2.name = "Motor driver";
+	app2.descr = "Setup and control the motor";
+	app2.icon = &DriverControl::Icon;
+	new App(app2, d);
 	GUI::Init(d);
 
 
-	auto driver = new PPMDriver();
 	while(1) {
 		vTaskDelay(1000);
 	}

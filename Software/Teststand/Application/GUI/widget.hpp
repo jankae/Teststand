@@ -29,6 +29,7 @@ public:
 		Window,
 		Scopescreen,
 		Desktop,
+		Radiobutton,
 	};
 
 	Widget();

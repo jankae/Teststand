@@ -17,6 +17,7 @@
 #include "progressbar.hpp"
 #include "graph.hpp"
 #include "custom.hpp"
+#include "Radiobutton.hpp"
 
 #include "desktop.hpp"
 

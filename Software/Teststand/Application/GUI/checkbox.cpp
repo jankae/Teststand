@@ -1,8 +1,9 @@
 #include "checkbox.hpp"
 
-Checkbox::Checkbox(bool *value, void (*cb)(Widget*), coords_t size) {
+Checkbox::Checkbox(bool *value, Callback cb, void *ptr, coords_t size) {
     this->value = value;
-    callback = cb;
+    this->cb = cb;
+    cbptr = ptr;
     this->size = size;
 }
 
@@ -12,14 +13,18 @@ void Checkbox::draw(coords_t offset) {
 	coords_t lowerRight = upperLeft;
 	lowerRight.x += size.x - 1;
 	lowerRight.y += size.y - 1;
-//	if (selected) {
-//		display_SetForeground(COLOR_SELECTED);
-//	} else {
-		display_SetForeground (Border);
-//	}
+	if (selectable) {
+		display_SetForeground(Border);
+	} else {
+		display_SetForeground (Unselectable);
+	}
 	display_Rectangle(upperLeft.x, upperLeft.y, lowerRight.x, lowerRight.y);
 	if (*value) {
-		display_SetForeground (Ticked);
+		if (selectable) {
+			display_SetForeground(Ticked);
+		} else {
+			display_SetForeground (Unselectable);
+		}
 		display_Line(upperLeft.x + 2, lowerRight.y - size.y / 3,
 				upperLeft.x + size.x / 3, lowerRight.y - 2);
 		display_Line(upperLeft.x + 2, lowerRight.y - size.y / 3 - 1,
@@ -33,7 +38,11 @@ void Checkbox::draw(coords_t offset) {
 		display_Line(lowerRight.x - 2, upperLeft.y + 4,
 				upperLeft.x + size.x / 3 + 2, lowerRight.y - 2);
 	} else {
-		display_SetForeground (Unticked);
+		if (selectable) {
+			display_SetForeground(Unticked);
+		} else {
+			display_SetForeground (Unselectable);
+		}
 		display_Line(upperLeft.x + 3, upperLeft.y + 3, lowerRight.x - 3,
 				lowerRight.y - 3);
 		display_Line(upperLeft.x + 4, upperLeft.y + 3, lowerRight.x - 3,
@@ -51,17 +60,14 @@ void Checkbox::draw(coords_t offset) {
 
 void Checkbox::input(GUIEvent_t *ev) {
 	switch(ev->type) {
-//	case EVENT_BUTTON_CLICKED:
-//		if(ev->button!=BUTTON_UNIT1 && ev->button != BUTTON_ENCODER) {
-//			break;
-//		}
-//		/* no break */
 	case EVENT_TOUCH_RELEASED:
-		*value = !*value;
-		requestRedrawFull();
-		if (callback)
-			callback(this);
-		ev->type = EVENT_NONE;
+		if (selectable) {
+			*value = !*value;
+			requestRedrawFull();
+			if (cb)
+				cb(cbptr, this);
+			ev->type = EVENT_NONE;
+		}
 		break;
 	default:
 		break;

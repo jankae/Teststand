@@ -128,6 +128,7 @@ void Desktop::input(GUIEvent_t* ev) {
 						if (apps[app]->topWidget) {
 							apps[app]->topWidget->requestRedrawFull();
 						}
+						this->requestRedraw();
 					}
 					break;
 				default:
@@ -147,7 +148,8 @@ void Desktop::input(GUIEvent_t* ev) {
 				switch (apps[app]->state) {
 				case App::State::Running:
 				case App::State::Starting:
-					static App *AppToClose = apps[app];
+					static App *AppToClose;
+					AppToClose = apps[app];
 					Dialog::MessageBox("Close?", Font_Big, "Close this app?",
 							Dialog::MsgBox::ABORT_OK, [](Dialog::Result res) {
 								if(res == Dialog::Result::OK) {

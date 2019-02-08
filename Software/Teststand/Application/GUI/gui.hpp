@@ -18,6 +18,7 @@
 #include "graph.hpp"
 #include "custom.hpp"
 #include "Radiobutton.hpp"
+#include "slider.hpp"
 
 #include "desktop.hpp"
 

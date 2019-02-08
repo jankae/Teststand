@@ -30,6 +30,7 @@ public:
 		Scopescreen,
 		Desktop,
 		Radiobutton,
+		Slider,
 	};
 
 	Widget();

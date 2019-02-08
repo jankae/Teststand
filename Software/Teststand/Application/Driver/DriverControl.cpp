@@ -27,7 +27,7 @@ void DriverControl::Task(void* a) {
 
 	c->attach(new Label("Driver:", Font_Big), COORDS(2, 2));
 	uint8_t driver = 0;
-	auto *iDriver = new ItemChooser(drivers, &driver, Font_Big, 3, 136);
+	auto *iDriver = new ItemChooser(drivers, &driver, Font_Big, 3, 130);
 	iDriver->setCallback([](void *ptr, Widget*) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
 		xTaskNotify(h, (uint32_t ) Notification::DriverChange,
@@ -42,7 +42,7 @@ void DriverControl::Task(void* a) {
 		xTaskNotify(h, (uint32_t ) Notification::MotorOnOff,
 				eSetValueWithOverwrite);
 	}, xTaskGetCurrentTaskHandle(), COORDS(25,25));
-	c->attach(cOn, COORDS(110, 70));
+	c->attach(cOn, COORDS(107, 70));
 
 	c->attach(new Label("Mode:", Font_Big), COORDS(1, 87));
 	Driver::ControlMode control = Driver::ControlMode::Percentage;
@@ -84,6 +84,15 @@ void DriverControl::Task(void* a) {
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(eSet, COORDS(2, 200));
 	eSet->setSelectable(false);
+	auto *sSet = new Slider(&setpoint, Unit::maxPercent, Unit::null,
+			COORDS(21, 220));
+	sSet->setCallback([](void *ptr, Widget*) {
+		TaskHandle_t h = (TaskHandle_t) ptr;
+		xTaskNotify(h, (uint32_t ) Notification::SetPointChange,
+				eSetValueWithOverwrite);
+	}, xTaskGetCurrentTaskHandle());
+	c->attach(sSet, COORDS(135, 10));
+	sSet->setSelectable(false);
 
 	app->StartComplete(c);
 
@@ -109,6 +118,7 @@ void DriverControl::Task(void* a) {
 					rThrust->setSelectable(false);
 					cOn->setSelectable(false);
 					eSet->setSelectable(false);
+					sSet->setSelectable(false);
 				} else {
 					auto f = pDriver->GetFeatures();
 					if (f.OnOff) {
@@ -124,6 +134,7 @@ void DriverControl::Task(void* a) {
 						rThrust->setSelectable(true);
 					}
 					eSet->setSelectable(true);
+					sSet->setSelectable(true);
 				}
 				break;
 			case Notification::ControlModeChange:
@@ -138,6 +149,8 @@ void DriverControl::Task(void* a) {
 				if(pDriver) {
 					pDriver->SetControl(control, setpoint);
 				}
+				eSet->requestRedraw();
+				sSet->requestRedrawFull();
 				break;
 			}
 		}

@@ -108,6 +108,9 @@ void Entry::ValueInputCallback(bool updated) {
 }
 
 void Entry::input(GUIEvent_t *ev) {
+	if (!selectable) {
+		return;
+	}
     switch(ev->type) {
     case EVENT_TOUCH_RELEASED:
 		new ValueInput("New value?", value, unit,

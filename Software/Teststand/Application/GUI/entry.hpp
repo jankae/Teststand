@@ -18,6 +18,14 @@ public:
 		this->cb = cb;
 		cbptr = ptr;
 	}
+	void ChangeValue(int32_t *value, const int32_t *max, const int32_t *min,
+			const Unit::unit *unit[]) {
+		this->value = value;
+		this->max = max;
+		this->min = min;
+		this->unit = unit;
+		requestRedraw();
+	}
 
 private:
 	int32_t constrainValue(int32_t val);

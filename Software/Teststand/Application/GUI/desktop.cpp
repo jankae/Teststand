@@ -30,6 +30,7 @@ void Desktop::draw(coords_t offset) {
 		for (i = 0; i < AppCnt; i++) {
 			if (apps[i]->state == App::State::Running) {
 				focussed = i;
+				apps[i]->topWidget->setSelectable(true);
 				break;
 			}
 		}
@@ -109,7 +110,6 @@ void Desktop::input(GUIEvent_t* ev) {
 				switch (apps[app]->state) {
 				case App::State::Stopped:
 					/* start app */
-					focussed = app;
 					apps[app]->state = App::State::Starting;
 					if (!apps[app]->Start()) {
 						apps[app]->state = App::State::Stopped;
@@ -119,13 +119,17 @@ void Desktop::input(GUIEvent_t* ev) {
 					} else {
 						this->requestRedraw();
 					}
-					break;
+					/* No break */
 				case App::State::Running:
 				case App::State::Starting:
 					if (focussed != app) {
 						/* bring app into focus */
+						if(apps[focussed]->topWidget) {
+							apps[focussed]->topWidget->setSelectable(false);
+						}
 						focussed = app;
 						if (apps[app]->topWidget) {
+							apps[focussed]->topWidget->setSelectable(true);
 							apps[app]->topWidget->requestRedrawFull();
 						}
 						this->requestRedraw();

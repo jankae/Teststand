@@ -65,6 +65,7 @@ void DriverControl::Task(void* a) {
 				eSetValueWithOverwrite);
 	};
 	set.ptr = xTaskGetCurrentTaskHandle();
+	set.first = nullptr;
 	rPercent->AddToSet(set);
 	rRPM->AddToSet(set);
 	rThrust->AddToSet(set);

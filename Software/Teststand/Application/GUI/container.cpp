@@ -5,7 +5,6 @@
 
 Container::Container(coords_t size) {
 	this->size = size;
-	selectable = false;
 	editing = false;
 	focussed = false;
 	scrollHorizontal = false;

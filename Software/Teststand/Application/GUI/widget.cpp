@@ -97,7 +97,7 @@ void Widget::input(Widget *w, GUIEvent_t* ev) {
 			/* find matching child */
 			Widget *child = w->firstChild;
 			for (; child; child = child->next) {
-				if (child->isInArea(ev->pos)) {
+				if (child->selectable && child->isInArea(ev->pos)) {
 					/* event is in child region */
 					input(child, ev);
 					/* send event only to first match */

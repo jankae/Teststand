@@ -20,7 +20,7 @@ bool App::Start() {
 		LOG(Log_GUI, LevelError, "Failed to create task for \"%s\"", info.name);
 		return false;
 	} else {
-		LOG(Log_GUI, LevelError, "Created task for \"%s\"", info.name);
+		LOG(Log_GUI, LevelInfo, "Created task for \"%s\"", info.name);
 		return true;
 	}
 }

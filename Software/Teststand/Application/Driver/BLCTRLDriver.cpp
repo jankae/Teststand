@@ -1,16 +1,25 @@
 #include "BLCTRLDriver.hpp"
 
 #include "gui.hpp"
+#include "cast.hpp"
+
+extern I2C_HandleTypeDef hi2c2;
 
 BLCTRLDriver::BLCTRLDriver(coords_t displaySize) {
 	features.OnOff = true;
 	features.Control.Percentage = true;
-	// TODO support readback
+	features.Readback.Current = true;
 
 	vCutoff = cutoffDefault;
 	i2cAddress = defaultI2CAddress;
 	running = false;
 	setValue = 0;
+	updatePeriod = updatePeriodDefault;
+	communicationOK = false;
+	motorCurrent = 0;
+	handle = nullptr;
+	i2c = &hi2c2;
+	HAL_I2C_Init(i2c);
 
 	auto c = new Container(displaySize);
 	c->attach(new Label("I2C addr.:", Font_Big), COORDS(0,2));
@@ -23,6 +32,21 @@ BLCTRLDriver::BLCTRLDriver(coords_t displaySize) {
 			Unit::None);
 	c->attach(eCutoff, COORDS(15, 70));
 
+	c->attach(new Label("Period:", Font_Big), COORDS(15, 100));
+	auto ePeriod = new Entry(&updatePeriod, updatePeriodMax, updatePeriodMin,
+			Font_Big, 7, Unit::Time);
+	c->attach(ePeriod, COORDS(15, 120));
+
+	c->attach(new Label("Status:", Font_Big), COORDS(15, 150));
+	lState = new Label(6, Font_Big, Label::Orientation::CENTER);
+	lState->setColor(COLOR_RED);
+	lState->setText("NO ACK");
+	c->attach(lState, COORDS(21, 170));
+
+	xTaskCreate(
+			pmf_cast<void (*)(void*), BLCTRLDriver, &BLCTRLDriver::Task>::cfn,
+			"BLCTRL", 256, this, 4, &handle);
+
 	topWidget = c;
 }
 
@@ -30,6 +54,10 @@ BLCTRLDriver::~BLCTRLDriver() {
 	if (topWidget) {
 		delete topWidget;
 	}
+	if(handle) {
+		vTaskDelete(handle);
+	}
+	HAL_I2C_DeInit(i2c);
 }
 
 bool BLCTRLDriver::SetRunning(bool running) {
@@ -50,4 +78,38 @@ Driver::Readback BLCTRLDriver::GetData() {
 	Readback ret;
 	memset(&ret, 0, sizeof(ret));
 	return ret;
+}
+
+void BLCTRLDriver::Task() {
+	uint32_t lastRun = xTaskGetTickCount();
+	uint32_t residual = 0;
+	while(1) {
+		residual += updatePeriod;
+		vTaskDelayUntil(&lastRun, residual / 1000);
+		residual %= 1000;
+		uint8_t compare =
+				running ? (int64_t) 255 * setValue / Unit::maxPercent : 0;
+		bool ok = HAL_I2C_Master_Transmit(i2c, i2cAddress, &compare, 1, 10)
+				== HAL_OK;
+		if (ok) {
+			ok = HAL_I2C_Master_Receive(i2c, i2cAddress, &compare, 1, 10)
+					== HAL_OK;
+			if (ok) {
+				motorCurrent = compare * 100000UL;
+			}
+		}
+		if (ok != communicationOK) {
+			communicationOK = ok;
+			if (ok) {
+				lState->setColor(COLOR_GREEN);
+				lState->setText("OK");
+			} else {
+				lState->setColor(COLOR_RED);
+				lState->setText("NO ACK");
+			}
+		}
+		if (!ok) {
+			lastRun = xTaskGetTickCount();
+		}
+	}
 }

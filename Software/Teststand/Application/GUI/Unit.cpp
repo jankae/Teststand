@@ -53,13 +53,14 @@ const Unit::unit *Unit::Power[] = { &uW, &mW, &W, nullptr };
 const Unit::unit *Unit::Temperature[] = {&C, nullptr };
 const Unit::unit *Unit::Resistance[] = { &uR, &mR, &R, nullptr };
 const Unit::unit *Unit::Energy[] = { &uWh, &mWh, &Wh, nullptr };
-const Unit::unit *Unit::Time[] = {&us, &ms, &s, &min, nullptr };
+const Unit::unit *Unit::Time[] = {&us, &ms, &s, nullptr };
 const Unit::unit *Unit::Memory[] = { &B, &kB, nullptr };
 const Unit::unit *Unit::Capacity[] = { &uF, &mF, &F, nullptr };
 const Unit::unit *Unit::Percent[] = { &percent, nullptr };
 const Unit::unit *Unit::Charge[] = { &uAh, &mAh, &Ah, nullptr };
 const Unit::unit *Unit::Weight[] = { &mg, &g, &kg, nullptr };
 const Unit::unit *Unit::None[] = {&none, nullptr };
+const Unit::unit *Unit::Hex[] = {nullptr };
 
 const int32_t Unit::null = 0;
 const int32_t Unit::maxPercent = 100000000;
@@ -99,6 +100,14 @@ uint32_t Unit::LeastDigitValueFromString(const char *s,
 
 void Unit::StringFromValue(char *to, uint8_t len, int32_t val,
 		const Unit::unit *unit[]) {
+	if (unit == Unit::Hex) {
+		uint8_t encodedLength = snprintf(to, len + 1, "0x%X", val);
+		if (encodedLength > len) {
+			memset(to, '-', len);
+			to[len] = 0;
+		}
+		return;
+	}
 	/* store sign */
 	int8_t negative = 0;
 	if (val < 0) {

@@ -12,6 +12,8 @@ public:
 	using Callback = void (*)(void *, Widget*);
 	Entry(int32_t *value, const int32_t *max, const int32_t *min, font_t font,
 			uint8_t length, const Unit::unit *unit[], const color_t c = COLOR_FG_DEFAULT);
+	Entry(int32_t *value, int32_t max, int32_t min, font_t font,
+			uint8_t length, const Unit::unit *unit[], const color_t c = COLOR_FG_DEFAULT);
 	~Entry();
 
 	void setCallback(Callback cb, void *ptr) {
@@ -41,8 +43,15 @@ private:
 	static constexpr color_t Border = COLOR_FG_DEFAULT;
 
     int32_t *value;
-    const int32_t *max;
-    const int32_t *min;
+	bool limitPtr;
+    union {
+		const int32_t *maxptr;
+		int32_t max;
+	};
+	union {
+    	const int32_t *minptr;
+		int32_t min;
+	};
     font_t font;
     const Unit::unit **unit;
     uint8_t length;

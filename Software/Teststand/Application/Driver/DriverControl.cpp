@@ -93,6 +93,7 @@ void DriverControl::Task(void* a) {
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(sSet, COORDS(135, 10));
 	sSet->setSelectable(false);
+	constexpr coords_t driverSize = COORDS(120, 240);
 
 	app->StartComplete(c);
 
@@ -109,7 +110,7 @@ void DriverControl::Task(void* a) {
 				}
 				switch(driver) {
 				case 1:
-					pDriver = new PPMDriver();
+					pDriver = new PPMDriver(driverSize);
 					break;
 				}
 				if(!pDriver) {
@@ -135,7 +136,10 @@ void DriverControl::Task(void* a) {
 					}
 					eSet->setSelectable(true);
 					sSet->setSelectable(true);
+					c->attach(pDriver->GetTopWidget(),
+							COORDS(c->getSize().x - driverSize.x, 0));
 				}
+				c->requestRedrawFull();
 				break;
 			case Notification::ControlModeChange:
 				break;

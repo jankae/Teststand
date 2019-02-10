@@ -3,10 +3,32 @@
 #include "ValueInput.hpp"
 #include "cast.hpp"
 
-Entry::Entry(int32_t *value, const int32_t *max, const int32_t *min,
-		font_t font, uint8_t length, const Unit::unit *unit[], const color_t c) {
+Entry::Entry(int32_t *value, const int32_t *max, const int32_t *min, font_t font,
+		uint8_t length, const Unit::unit *unit[], const color_t c) {
 	/* set member variables */
 	this->value = value;
+	limitPtr = true;
+	this->maxptr = max;
+	this->minptr = min;
+	this->font = font;
+	this->unit = unit;
+	this->length = length;
+    cb = nullptr;
+    cbptr = nullptr;
+    editing = false;
+    dotSet = false;
+    editPos = 0;
+	size.y = font.height + 3;
+	size.x = font.width * length + 3;
+	inputString = new char[length + 1];
+	color = c;
+}
+
+Entry::Entry(int32_t* value, int32_t max, int32_t min, font_t font,
+		uint8_t length, const Unit::unit* unit[], const color_t c) {
+	/* set member variables */
+	this->value = value;
+	limitPtr = false;
 	this->max = max;
 	this->min = min;
 	this->font = font;
@@ -30,12 +52,18 @@ Entry::~Entry() {
 }
 
 int32_t Entry::constrainValue(int32_t val) {
-    if (max && val > *max) {
-        return *max;
-    } else if (min && val < *min) {
-        return *min;
-    }
-    return val;
+	int32_t high = max;
+	int32_t low = min;
+	if (limitPtr) {
+		high = maxptr ? *maxptr : INT32_MAX;
+		low = minptr ? *minptr : INT32_MIN;
+	}
+	if (val > high) {
+		return high;
+	} else if (val < low) {
+		return low;
+	}
+	return val;
 }
 
 int32_t Entry::InputStringValue(uint32_t multiplier) {
@@ -123,3 +151,5 @@ void Entry::input(GUIEvent_t *ev) {
     }
     return;
 }
+
+

@@ -1,6 +1,7 @@
 #include "PPMDriver.hpp"
 #include "stm32f1xx.h"
 #include "gui.hpp"
+#include "cast.hpp"
 
 #define TIM 						2
 
@@ -21,13 +22,14 @@
 #define TIM_NVIC_ISR_M1(x)  		TIM_NVIC_ISR_M2(x)
 #define TIM_NVIC_ISR				TIM_NVIC_ISR_M1(TIM)
 
-PPMDriver::PPMDriver() {
+PPMDriver::PPMDriver(coords_t displaySize) {
 	features.OnOff = true;
 	features.Control.Percentage = true;
 
-	widthOff = widthOffDefault;
-	widthMin = widthMinDefault;
+	widthMin = widthOffDefault;
+	widthCutoff = widthMinDefault;
 	widthMax = widthMaxDefault;
+	updatePeriod = updatePeriodDefault;
 	running = false;
 	setValue = 0;
 
@@ -38,8 +40,7 @@ PPMDriver::PPMDriver() {
 	uint32_t timerFreq = APB1_freq == AHB_freq ? APB1_freq : APB1_freq * 2;
 
 	TIM_BASE->PSC = (timerFreq / 1000000UL) - 1;
-	// overflow after 20ms
-	TIM_BASE->ARR = 19999;
+	TIM_BASE->ARR = updatePeriod - 1;
 	HAL_NVIC_SetPriority(TIM_NVIC_ISR, 0, 0);
 	HAL_NVIC_EnableIRQ(TIM_NVIC_ISR);
 
@@ -49,7 +50,42 @@ PPMDriver::PPMDriver() {
 	TIM_BASE->CR1 |= TIM_CR1_CEN;
 
 	UpdatePPM();
-	// TODO GUI
+
+	auto c = new Container(displaySize);
+	c->attach(new Label("Pulsewidth", Font_Big), COORDS(0,2));
+	c->attach(new Label("Min:", Font_Big), COORDS(15,30));
+	auto eMin = new Entry(&widthMin, widthHigh, widthLow, Font_Big, 7,
+			Unit::Time);
+	eMin->setCallback(
+			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
+			this);
+	c->attach(eMin, COORDS(15,50));
+
+	c->attach(new Label("Cutoff:", Font_Big), COORDS(15,80));
+	auto eCutoff = new Entry(&widthCutoff, widthHigh, widthLow, Font_Big, 7,
+			Unit::Time);
+	eCutoff->setCallback(
+			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
+			this);
+	c->attach(eCutoff, COORDS(15, 100));
+
+	c->attach(new Label("Max:", Font_Big), COORDS(15,130));
+	auto eMax = new Entry(&widthMax, widthHigh, widthLow, Font_Big, 7,
+			Unit::Time);
+	eMax->setCallback(
+			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
+			this);
+	c->attach(eMax, COORDS(15, 150));
+
+	c->attach(new Label("Period:", Font_Big), COORDS(15, 190));
+	auto ePeriod = new Entry(&updatePeriod, updataPeriodMax, updataPeriodMin,
+			Font_Big, 7, Unit::Time);
+	ePeriod->setCallback(
+			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
+			this);
+	c->attach(ePeriod, COORDS(15, 210));
+
+	topWidget = c;
 }
 
 PPMDriver::~PPMDriver() {
@@ -59,7 +95,9 @@ PPMDriver::~PPMDriver() {
 	// clear PPM pin
 	PPM_GPIO_Port->BSRR = PPM_Pin << 16;
 
-	// TODO GUI
+	if(topWidget) {
+		delete topWidget;
+	}
 }
 
 bool PPMDriver::SetRunning(bool running) {
@@ -84,17 +122,22 @@ Driver::Readback PPMDriver::GetData() {
 	return ret;
 }
 
-void PPMDriver::UpdatePPM() {
-	uint16_t compare = (int64_t) (widthMax - widthOff) * setValue
+void PPMDriver::UpdatePPM(Widget*) {
+	uint16_t compare = (int64_t) (widthMax - widthMin) * setValue
 			/ Unit::maxPercent;
-	compare += widthOff;
-	if(running) {
-		if (compare < widthMin) {
-			compare = widthMin;
+	compare += widthMin;
+//	if (TIM_BASE->ARR != updatePeriod - 1) {
+//		TIM_BASE->CR1 &= ~TIM_CR1_CEN;
+		TIM_BASE->ARR = updatePeriod - 1;
+//		TIM_BASE->CR1 |= TIM_CR1_CEN;
+//	}
+	if (running) {
+		if (compare < widthCutoff) {
+			compare = widthCutoff;
 		}
 		TIM_BASE->CCR1 = compare;
 	} else {
-		TIM_BASE->CCR1 = widthOff;
+		TIM_BASE->CCR1 = widthMin;
 	}
 }
 extern "C" {

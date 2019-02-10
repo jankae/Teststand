@@ -23,10 +23,10 @@ static const Unit::unit uWh = {"uWh", 1};
 static const Unit::unit mWh = {"mWh", 1000};
 static const Unit::unit Wh = {"Wh", 1000000};
 
-static const Unit::unit ms = {"ms", 1};
-static const Unit::unit s = {"s", 1000};
-static const Unit::unit min = {"m", 60000};
-static const Unit::unit hour = {"h", 3600000};
+static const Unit::unit us = {"us", 1};
+static const Unit::unit ms = {"ms", 1000};
+static const Unit::unit s = {"s", 10000000};
+static const Unit::unit min = {"m", 600000000};
 
 static const Unit::unit B = {"B", 1};
 static const Unit::unit kB = {"kB", 1024};
@@ -53,7 +53,7 @@ const Unit::unit *Unit::Power[] = { &uW, &mW, &W, nullptr };
 const Unit::unit *Unit::Temperature[] = {&C, nullptr };
 const Unit::unit *Unit::Resistance[] = { &uR, &mR, &R, nullptr };
 const Unit::unit *Unit::Energy[] = { &uWh, &mWh, &Wh, nullptr };
-const Unit::unit *Unit::Time[] = {&ms, &s, &min, &hour, nullptr };
+const Unit::unit *Unit::Time[] = {&us, &ms, &s, &min, nullptr };
 const Unit::unit *Unit::Memory[] = { &B, &kB, nullptr };
 const Unit::unit *Unit::Capacity[] = { &uF, &mF, &F, nullptr };
 const Unit::unit *Unit::Percent[] = { &percent, nullptr };

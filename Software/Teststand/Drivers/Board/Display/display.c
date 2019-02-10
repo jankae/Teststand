@@ -416,7 +416,7 @@ void display_String(int16_t x, int16_t y, const char *s) {
 	while (*s) {
 		display_Char(x, y, *s++);
 		x += font.width;
-		if (x > active.maxX - font.width)
+		if (x > active.maxX)
 			break;
 	}
 }

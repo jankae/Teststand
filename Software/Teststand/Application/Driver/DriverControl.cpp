@@ -2,6 +2,7 @@
 #include "driver.hpp"
 #include "PPMDriver.hpp"
 #include "BLCTRLDriver.hpp"
+#include "BLDriver.hpp"
 #include "App.hpp"
 #include "log.h"
 #include "gui.hpp"
@@ -9,6 +10,7 @@
 constexpr char *drivers[] = {
 		"None",
 		"PPM",
+		"BLDriver",
 		"BLCtrl1.2",
 		nullptr,
 };
@@ -116,6 +118,9 @@ void DriverControl::Task(void* a) {
 					pDriver = new PPMDriver(driverSize);
 					break;
 				case 2:
+					pDriver = new BLDriver(driverSize);
+					break;
+				case 3:
 					pDriver = new BLCTRLDriver(driverSize);
 					break;
 				}

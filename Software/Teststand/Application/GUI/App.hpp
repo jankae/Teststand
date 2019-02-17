@@ -25,6 +25,7 @@ public:
 private:
 	bool Start();
 	bool Stop();
+	friend void guiThread(void);
 	enum class State : uint8_t {
 		Stopped,
 		Starting,

@@ -3,6 +3,8 @@
 #include <cstdint>
 #include "fatfs.h"
 
+extern SemaphoreHandle_t fileAccess;
+
 namespace File {
 
 enum class PointerType : uint8_t {

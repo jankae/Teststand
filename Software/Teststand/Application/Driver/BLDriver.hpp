@@ -16,6 +16,8 @@ public:
 	Readback GetData() override;
 private:
 	void Task();
+	bool WriteConfig();
+	bool ReadConfig();
 
 	enum class DriverMode : uint8_t {
 			Off,
@@ -41,8 +43,10 @@ private:
 	int32_t updatePeriod;
 	int32_t setValue;
 	bool communicationOK;
-	TaskHandle_t handle;
+	volatile TaskHandle_t handle;
+	volatile bool taskExit;
 	int32_t motorCurrent;
 	Label *lState;
 	I2C_HandleTypeDef *i2c;
+	int32_t configIndex;
 };

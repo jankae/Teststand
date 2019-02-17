@@ -1,8 +1,8 @@
 #include "dialog.hpp"
 
 #include "log.h"
+#include "file.hpp"
 
-extern SemaphoreHandle_t fileAccess;
 extern TaskHandle_t GUIHandle;
 
 namespace Dialog {

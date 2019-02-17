@@ -17,6 +17,10 @@ typedef enum {
 	EVENT_BUTTON_CLICKED,
 	EVENT_ENCODER_MOVED,
 	EVENT_WIDGET_DELETE,
+	EVENT_APP_START,
+	EVENT_APP_STOP,
+	EVENT_APP_EXITED,
+	EVENT_APP_STARTED,
 } GUIEventType_t;
 
 struct event {
@@ -32,6 +36,7 @@ struct event {
 		uint32_t button;
 		/* Encoder movement */
 		int32_t movement;
+		class App *app;
 	};
 	coords_t dragged;
 };

@@ -39,6 +39,8 @@ void prvGetRegistersFromStack(uint32_t *pulFaultStackAddress) {
 		log_force("HardFault on vector table read");
 	} else if (SCB->HFSR & SCB_HFSR_FORCED_Msk) {
 		log_force("Forced hardfault, SCB->CFSR: 0x%08x", SCB->CFSR);
+		log_force("BFAR: 0x%08x", SCB->BFAR);
+		log_force("MMFAR: 0x%08x", SCB->MMFAR);
 #ifdef SCB_CFSR_MLSPERR
 		if(SCB->CFSR & SCB_CFSR_M) {
 			log_force("Memory manage fault during floating point lazy state preservation");

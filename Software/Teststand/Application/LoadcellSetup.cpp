@@ -37,7 +37,7 @@ static int32_t sampleLoadcell(uint8_t cell) {
 
 void LoadcellSetup::Task(void *a) {
 	App *app = (App*) a;
-	LOG(Log_App, LevelInfo, "Settings task");
+	LOG(Log_App, LevelInfo, "Loadcell task");
 	handle = xTaskGetCurrentTaskHandle();
 
 	auto c = new Container(COORDS(280, 240));
@@ -60,8 +60,8 @@ void LoadcellSetup::Task(void *a) {
 					xTaskNotify(ptr, (uint32_t ) Notification::NewSettings,
 							eSetValueWithOverwrite);
 				}, xTaskGetCurrentTaskHandle(), COORDS(19, 19));
-		eRaw[i] = new Entry(&Loadcells::cells[i].mgram, nullptr, nullptr,
-				Font_Big, 7, Unit::None);
+		eRaw[i] = new Entry(&Loadcells::cells[i].uNewton, nullptr, nullptr,
+				Font_Big, 7, Unit::Force);
 		eRaw[i]->setSelectable(false);
 		bZero[i] = new Button("Zero", Font_Big,	[](void*, Widget* w) {
 			for (loadcell = 0; loadcell < Loadcells::MaxCells; loadcell++) {
@@ -123,7 +123,7 @@ void LoadcellSetup::Task(void *a) {
 				Loadcells::cells[loadcell].offset = sampleLoadcell(loadcell);
 				break;
 			case Notification::WeightLoadcell: {
-				new ValueInput("Calibration weight?", &calibrationWeight, Unit::Weight,
+				new ValueInput("Calibration weight?", &calibrationWeight, Unit::Force,
 						[](void*, bool confirmed) {
 					if(confirmed) {
 						if (handle) {
@@ -153,12 +153,9 @@ void LoadcellSetup::Task(void *a) {
 			}
 		}
 		if (app->Closed()) {
-			delete c;
 			app->Exit();
 			vTaskDelete(nullptr);
 		}
 	}
 }
 
-void LoadcellSetup::LoadFromCard() {
-}

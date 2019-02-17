@@ -5,7 +5,7 @@
 #include <cstring>
 #include <cstdlib>
 
-static SemaphoreHandle_t fileAccess;
+SemaphoreHandle_t fileAccess;
 static FIL file;
 static bool fileOpened = false;
 static FATFS fatfs;
@@ -82,9 +82,9 @@ void File::WriteParameters(const Entry *paramList,
 				break;
 			case PointerType::BOOL:
 				if(*(bool*) paramList[i].ptr) {
-					strncpy(buf, "true", sizeof(buf));
+					strncpy(buf, "true\n", sizeof(buf));
 				} else {
-					strncpy(buf, "false", sizeof(buf));
+					strncpy(buf, "false\n", sizeof(buf));
 				}
 				break;
 			default:
@@ -98,6 +98,8 @@ void File::WriteParameters(const Entry *paramList,
 File::ParameterResult File::ReadParameters(const Entry *paramList,
 		uint8_t length) {
 	if (fileOpened) {
+		/* always start at beginning of file */
+		f_lseek(&file, 0);
 		/* opened file, now read parameters */
 		char line[50];
 		uint8_t valueSet[length];
@@ -118,6 +120,15 @@ File::ParameterResult File::ReadParameters(const Entry *paramList,
 						/* Skip leading spaces */
 						while (*++start == ' ')
 							;
+						// terminate at line end
+						char *newline = strchr(start, '\n');
+						if (newline) {
+							*newline = 0;
+						}
+						char *cr = strchr(start, '\r');
+						if (cr) {
+							*cr = 0;
+						}
 						/* store value in correct format */
 						switch (paramList[i].type) {
 						case PointerType::INT8:

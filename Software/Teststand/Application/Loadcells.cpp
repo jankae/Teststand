@@ -3,6 +3,8 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "log.h"
+#include "file.hpp"
+#include "Config.hpp"
 
 static TaskHandle_t handle;
 extern SPI_HandleTypeDef hspi1;
@@ -36,7 +38,7 @@ static void loadcelltask(void *ptr) {
 				if (Loadcells::enabled[i]) {
 					auto& cell = Loadcells::cells[i];
 					cell.raw = max11254_read_result(&max, i);
-					cell.mgram = (cell.raw - cell.offset) * cell.scale;
+					cell.uNewton = (cell.raw - cell.offset) * cell.scale;
 				}
 			}
 			max11254_scan_conversion_static_gpio(&max, Loadcells::rate,
@@ -64,6 +66,55 @@ static void loadcelltask(void *ptr) {
 	}
 }
 
+static void SetDefaultConfig() {
+	for (auto &i : Loadcells::cells) {
+		i.offset = 0;
+		i.scale = 1.0f;
+	}
+	for (auto &i : Loadcells::enabled) {
+		i = false;
+	}
+}
+
+static bool ReadConfig(void *ptr) {
+	SetDefaultConfig();
+	for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {
+		char enabled[] = "Loadcell::X::Enabled";
+		char offset[] = "Loadcell::X::Offset";
+		char scale[] = "Loadcell::X::Scale";
+		enabled[10] = i + '0';
+		offset[10] = i + '0';
+		scale[10] = i + '0';
+		File::Entry entries[] = { { enabled, &Loadcells::enabled[i],
+				File::PointerType::BOOL }, { offset,
+				&Loadcells::cells[i].offset, File::PointerType::INT32 }, {
+				scale, &Loadcells::cells[i].scale, File::PointerType::FLOAT }, };
+		if(File::ReadParameters(entries, 3) == File::ParameterResult::Error) {
+			return false;
+		}
+	}
+	Loadcells::UpdateSettings();
+	return true;
+}
+
+static bool WriteConfig(void *ptr) {
+	File::WriteLine("# Loadcell configuration and calibration\n");
+	for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {
+		char enabled[] = "Loadcell::X::Enabled";
+		char offset[] = "Loadcell::X::Offset";
+		char scale[] = "Loadcell::X::Scale";
+		enabled[10] = i + '0';
+		offset[10] = i + '0';
+		scale[10] = i + '0';
+		File::Entry entries[] = { { enabled, &Loadcells::enabled[i],
+				File::PointerType::BOOL }, { offset,
+				&Loadcells::cells[i].offset, File::PointerType::INT32 }, {
+				scale, &Loadcells::cells[i].scale, File::PointerType::FLOAT }, };
+		File::WriteParameters(entries, 3);
+	}
+	return true;
+}
+
 bool Loadcells::Init() {
 	max.spi = &hspi1;
 	max.CSgpio = GPIOB;
@@ -77,10 +128,8 @@ bool Loadcells::Init() {
 		return false;
 	}
 
-	for(auto &i : cells) {
-		i.offset = 0;
-		i.scale = 1.0f;
-	}
+	SetDefaultConfig();
+	Config::AddParseFunctions(WriteConfig, ReadConfig, nullptr);
 
 	if(xTaskCreate(loadcelltask, "MAX11254", 256, nullptr, 4, &handle)
 			!= pdPASS) {

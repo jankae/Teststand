@@ -45,6 +45,10 @@ static const Unit::unit mg = {"mg", 1};
 static const Unit::unit g=  {"g", 1000};
 static const Unit::unit kg = {"kg", 1000000};
 
+static const Unit::unit uN = {"uN", 1};
+static const Unit::unit mN =  {"mN", 1000};
+static const Unit::unit N = {"N", 1000000};
+
 static const Unit::unit none = {"", 1};
 
 const Unit::unit *Unit::Current[] = { &uA, &mA, &A, nullptr };
@@ -59,6 +63,7 @@ const Unit::unit *Unit::Capacity[] = { &uF, &mF, &F, nullptr };
 const Unit::unit *Unit::Percent[] = { &percent, nullptr };
 const Unit::unit *Unit::Charge[] = { &uAh, &mAh, &Ah, nullptr };
 const Unit::unit *Unit::Weight[] = { &mg, &g, &kg, nullptr };
+const Unit::unit *Unit::Force[] = { &uN, &mN, &N, nullptr };
 const Unit::unit *Unit::None[] = {&none, nullptr };
 const Unit::unit *Unit::Hex[] = {nullptr };
 

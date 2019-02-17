@@ -2,6 +2,7 @@
 #include "stm32f1xx.h"
 #include "gui.hpp"
 #include "cast.hpp"
+#include "Config.hpp"
 
 #define TIM 						2
 
@@ -86,6 +87,11 @@ PPMDriver::PPMDriver(coords_t displaySize) {
 	c->attach(ePeriod, COORDS(15, 210));
 
 	topWidget = c;
+
+	configIndex = Config::AddParseFunctions(
+			pmf_cast<Config::WriteFunc, PPMDriver, &PPMDriver::WriteConfig>::cfn,
+			pmf_cast<Config::ReadFunc, PPMDriver, &PPMDriver::ReadConfig>::cfn,
+			this);
 }
 
 PPMDriver::~PPMDriver() {
@@ -94,6 +100,8 @@ PPMDriver::~PPMDriver() {
 	TIM_BASE->CR1 &= ~TIM_CR1_CEN;
 	// clear PPM pin
 	PPM_GPIO_Port->BSRR = PPM_Pin << 16;
+
+	Config::RemoveParseFunctions(configIndex);
 
 	if(topWidget) {
 		delete topWidget;
@@ -158,4 +166,30 @@ void TIM_HANDLER(void) {
 		}
 	}
 }
+}
+
+bool PPMDriver::WriteConfig() {
+	File::WriteLine("# PPM driver settings\n");
+	const File::Entry entries[] = {
+		{ "Driver::PPM::WidthMin", &widthMin, File::PointerType::INT32},
+		{ "Driver::PPM::WidthCutoff", &widthCutoff, File::PointerType::INT32},
+		{ "Driver::PPM::WidthMax", &widthMax, File::PointerType::INT32},
+		{ "Driver::PPM::UpdatePeriod", &updatePeriod, File::PointerType::INT32},
+	};
+	File::WriteParameters(entries, 4);
+	return true;
+}
+
+bool PPMDriver::ReadConfig() {
+	const File::Entry entries[] = {
+		{ "Driver::PPM::WidthMin", &widthMin, File::PointerType::INT32},
+		{ "Driver::PPM::WidthCutoff", &widthCutoff, File::PointerType::INT32},
+		{ "Driver::PPM::WidthMax", &widthMax, File::PointerType::INT32},
+		{ "Driver::PPM::UpdatePeriod", &updatePeriod, File::PointerType::INT32},
+	};
+	File::ReadParameters(entries, 4);
+	setValue = 0;
+	UpdatePPM();
+	topWidget->requestRedrawFull();
+	return true;
 }

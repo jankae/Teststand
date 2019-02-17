@@ -3,6 +3,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "log.h"
+#include "gui.hpp"
 
 App::App(Info info, Desktop &d) {
 	this->info = info;
@@ -15,8 +16,10 @@ App::App(Info info, Desktop &d) {
 
 bool App::Start() {
 	// attempt to create thread
+	state = State::Starting;
 	if (xTaskCreate(info.task, info.name, info.StackSize, this, 5,
 			&handle)!=pdPASS) {
+		state = State::Stopped;
 		LOG(Log_GUI, LevelError, "Failed to create task for \"%s\"", info.name);
 		return false;
 	} else {
@@ -28,15 +31,20 @@ bool App::Start() {
 void App::StartComplete(Widget* top) {
 	topWidget = top;
 	state = State::Running;
-	d->addChild(top, COORDS(40, 0));
-	d->requestRedrawChildren();
-	top->requestRedrawFull();
 	LOG(Log_GUI, LevelInfo, "\"%s\" started", info.name);
+	GUIEvent_t ev;
+	ev.type = EVENT_APP_STARTED;
+	ev.app = this;
+	GUI::SendEvent(&ev);
 }
 
 void App::Exit() {
 	state = State::Stopped;
 	LOG(Log_GUI, LevelInfo, "\"%s\" exited", info.name);
+	GUIEvent_t ev;
+	ev.type = EVENT_APP_EXITED;
+	ev.app = this;
+	GUI::SendEvent(&ev);
 }
 
 bool App::Stop() {

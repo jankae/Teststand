@@ -6,8 +6,10 @@
 #include "App.hpp"
 #include "log.h"
 #include "gui.hpp"
+#include "file.hpp"
+#include "Config.hpp"
 
-constexpr char *drivers[] = {
+const char *drivers[] = {
 		"None",
 		"PPM",
 		"BLDriver",
@@ -22,51 +24,122 @@ enum class Notification : uint32_t {
 	SetPointChange,
 };
 
+#define DRIVER_CHANGE		 	0x01
+#define CONTROL_MODE_CHANGE		0x02
+#define MOTOR_ON_OFF			0x04
+#define SET_POINT_CHANGE		0x08
+
+using DriverSettings = struct {
+	uint8_t driver;
+	bool motorOn;
+	Driver::ControlMode control;
+	int32_t setpoint;
+};
+
+static DriverSettings *settings;
+
+static bool WriteConfig(void *ptr) {
+	if (!settings) {
+		return false;
+	}
+	File::WriteLine("# Driver configuration\n");
+	const File::Entry entries[] = {
+		{ "Driver::Driver", (void*) drivers[settings->driver], File::PointerType::STRING},
+		{ "Driver::ControlMode", &settings->control, File::PointerType::INT8},
+		{ "Driver::Setpoint", &settings->setpoint, File::PointerType::INT32},
+	};
+	File::WriteParameters(entries, 3);
+	return true;
+}
+
+static bool ReadConfig(void *ptr) {
+	if (!settings) {
+		return false;
+	}
+	char driverName[15];
+	const File::Entry entries[] = {
+		{ "Driver::Driver", driverName, File::PointerType::STRING},
+		{ "Driver::ControlMode", &settings->control, File::PointerType::INT8},
+		{ "Driver::Setpoint", &settings->setpoint, File::PointerType::INT32},
+	};
+	File::ReadParameters(entries, 3);
+	uint8_t driverNum = 0;
+	while (drivers[driverNum]) {
+		if (!strcmp(driverName, drivers[driverNum])) {
+			settings->driver = driverNum;
+			break;
+		}
+		driverNum++;
+	}
+	if (!drivers[driverNum]) {
+		LOG(Log_Config, LevelWarn, "No such driver found: %s", driverName);
+		driverNum = 0;
+	}
+	settings->motorOn = false;
+	TaskHandle_t h = (TaskHandle_t) ptr;
+	xTaskNotify(h,
+			DRIVER_CHANGE | CONTROL_MODE_CHANGE | MOTOR_ON_OFF | SET_POINT_CHANGE,
+			eSetBits);
+
+	// send 2 empty notifications, guaranteeing that the previous notification has been
+	// handled (necessary because some motor driver might add their own config parse functions)
+	while (xTaskNotify(h, 0, eSetValueWithoutOverwrite) == pdFAIL) {
+		vTaskDelay(10);
+	}
+	while (xTaskNotify(h, 0, eSetValueWithoutOverwrite) == pdFAIL) {
+		vTaskDelay(10);
+	}
+	return true;
+}
+
 void DriverControl::Task(void* a) {
 	App *app = (App*) a;
 	LOG(Log_App, LevelInfo, "Driver task");
 	Driver *pDriver = nullptr;
 
+	settings = new DriverSettings;
+
 	auto c = new Container(COORDS(280, 240));
 
 	c->attach(new Label("Driver:", Font_Big), COORDS(2, 2));
-	uint8_t driver = 0;
-	auto *iDriver = new ItemChooser(drivers, &driver, Font_Big, 3, 130);
+	settings->driver = 0;
+	auto *iDriver = new ItemChooser(drivers, &settings->driver, Font_Big, 3,
+			130);
 	iDriver->setCallback([](void *ptr, Widget*) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
-		xTaskNotify(h, (uint32_t ) Notification::DriverChange,
-				eSetValueWithOverwrite);
+		xTaskNotify(h, DRIVER_CHANGE,
+				eSetBits);
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(iDriver, COORDS(2, 18));
 
 	c->attach(new Label("Motor on:", Font_Big), COORDS(1, 70));
-	bool motorOn = false;
-	auto *cOn = new Checkbox(&motorOn, [](void *ptr, Widget*) {
+	settings->motorOn = false;
+	auto *cOn = new Checkbox(&settings->motorOn, [](void *ptr, Widget*) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
-		xTaskNotify(h, (uint32_t ) Notification::MotorOnOff,
-				eSetValueWithOverwrite);
-	}, xTaskGetCurrentTaskHandle(), COORDS(25,25));
+		xTaskNotify(h, MOTOR_ON_OFF,
+				eSetBits);
+	}, xTaskGetCurrentTaskHandle(), COORDS(25, 25));
 	c->attach(cOn, COORDS(107, 70));
 
 	c->attach(new Label("Mode:", Font_Big), COORDS(1, 87));
-	Driver::ControlMode control = Driver::ControlMode::Percentage;
-	auto *rPercent = new Radiobutton((uint8_t*)&control, 20,
+	settings->control = Driver::ControlMode::Percentage;
+	auto *rPercent = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::Percentage);
 	c->attach(rPercent, COORDS(2, 105));
 	c->attach(new Label("Percent", Font_Big), COORDS(25, 107));
-	auto *rRPM = new Radiobutton((uint8_t*) &control, 20,
+	auto *rRPM = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::RPM);
 	c->attach(rRPM, COORDS(2, 130));
 	c->attach(new Label("RPM", Font_Big), COORDS(25, 132));
-	auto *rThrust = new Radiobutton((uint8_t*) &control, 20,
+	auto *rThrust = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::Thrust);
 	c->attach(rThrust, COORDS(2, 155));
 	c->attach(new Label("Thrust", Font_Big), COORDS(25, 157));
 	Radiobutton::Set set;
 	set.cb = [](void *ptr, Widget*,uint8_t) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
-		xTaskNotify(h, (uint32_t ) Notification::ControlModeChange,
-				eSetValueWithOverwrite);
+		xTaskNotify(h, CONTROL_MODE_CHANGE,
+				eSetBits);
 	};
 	set.ptr = xTaskGetCurrentTaskHandle();
 	set.first = nullptr;
@@ -79,41 +152,43 @@ void DriverControl::Task(void* a) {
 	cOn->setSelectable(false);
 
 	c->attach(new Label("Setpoint:", Font_Big), COORDS(2, 180));
-	int32_t setpoint = 0;
-	auto *eSet = new Entry(&setpoint, &Unit::maxPercent, &Unit::null, Font_Big, 8,
-			Unit::Percent, COLOR_BLACK);
+	settings->setpoint = 0;
+	auto *eSet = new Entry(&settings->setpoint, &Unit::maxPercent, &Unit::null,
+			Font_Big, 8, Unit::Percent, COLOR_BLACK);
 	eSet->setCallback([](void *ptr, Widget*) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
-		xTaskNotify(h, (uint32_t ) Notification::SetPointChange,
-				eSetValueWithOverwrite);
+		xTaskNotify(h, SET_POINT_CHANGE,
+				eSetBits);
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(eSet, COORDS(2, 200));
 	eSet->setSelectable(false);
-	auto *sSet = new Slider(&setpoint, Unit::maxPercent, Unit::null,
+	auto *sSet = new Slider(&settings->setpoint, Unit::maxPercent, Unit::null,
 			COORDS(21, 220));
 	sSet->setCallback([](void *ptr, Widget*) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
-		xTaskNotify(h, (uint32_t ) Notification::SetPointChange,
-				eSetValueWithOverwrite);
+		xTaskNotify(h, SET_POINT_CHANGE,
+				eSetBits);
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(sSet, COORDS(135, 10));
 	sSet->setSelectable(false);
 	constexpr coords_t driverSize = COORDS(120, 240);
 
+	uint32_t configIndex = Config::AddParseFunctions(WriteConfig, ReadConfig,
+			xTaskGetCurrentTaskHandle());
+
 	app->StartComplete(c);
 
-	while(1) {
-		Notification n;
-		if (xTaskNotifyWait(0, 0xFFFFFFFF, (uint32_t*) &n, 100)) {
-			switch (n) {
-			case Notification::DriverChange:
-				motorOn = false;
+	while (1) {
+		uint32_t n;
+		if (xTaskNotifyWait(0, 0xFFFFFFFF, &n, 100)) {
+			if (n & DRIVER_CHANGE) {
+				settings->motorOn = false;
 				cOn->requestRedrawFull();
-				if(pDriver) {
+				if (pDriver) {
 					delete pDriver;
 					pDriver = nullptr;
 				}
-				switch(driver) {
+				switch (settings->driver) {
 				case 1:
 					pDriver = new PPMDriver(driverSize);
 					break;
@@ -124,7 +199,7 @@ void DriverControl::Task(void* a) {
 					pDriver = new BLCTRLDriver(driverSize);
 					break;
 				}
-				if(!pDriver) {
+				if (!pDriver) {
 					rPercent->setSelectable(false);
 					rRPM->setSelectable(false);
 					rThrust->setSelectable(false);
@@ -151,26 +226,31 @@ void DriverControl::Task(void* a) {
 							COORDS(c->getSize().x - driverSize.x, 0));
 				}
 				c->requestRedrawFull();
-				break;
-			case Notification::ControlModeChange:
-				break;
-			case Notification::MotorOnOff:
+			}
+			if (n & CONTROL_MODE_CHANGE) {
+			}
+			if (n & MOTOR_ON_OFF) {
 				if (pDriver) {
-					pDriver->SetRunning(motorOn);
-					pDriver->SetControl(control, setpoint);
+					pDriver->SetRunning(settings->motorOn);
+					pDriver->SetControl(settings->control, settings->setpoint);
 				}
-				break;
-			case Notification::SetPointChange:
-				if(pDriver) {
-					pDriver->SetControl(control, setpoint);
+			}
+			if (n & SET_POINT_CHANGE) {
+				if (pDriver) {
+					pDriver->SetControl(settings->control, settings->setpoint);
 				}
 				eSet->requestRedraw();
 				sSet->requestRedrawFull();
-				break;
 			}
 		}
 		if (app->Closed()) {
-			delete c;
+			if (pDriver) {
+				delete pDriver;
+				pDriver = nullptr;
+			}
+			Config::RemoveParseFunctions(configIndex);
+			delete settings;
+			settings = nullptr;
 			app->Exit();
 			vTaskDelete(nullptr);
 		}

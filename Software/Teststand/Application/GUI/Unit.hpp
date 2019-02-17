@@ -19,7 +19,7 @@ using unit = struct unit {
 
 extern const unit *Current[], *Voltage[], *Power[], *Temperature[],
 		*Resistance[], *Energy[], *Time[], *Memory[], *Capacity[], *Percent[],
-		*Charge[], *Weight[], *None[], *Hex[];
+		*Charge[], *Weight[], *Force[], *None[], *Hex[];
 extern const int32_t null, maxPercent;
 
 #define COORDS(v1, v2)	((coords_t){(int16_t) (v1), (int16_t) (v2)})

@@ -43,6 +43,5 @@ static const uint16_t imagedata[1024] = {
 static constexpr Image_t Icon = {.width = 32, .height = 32, .data = imagedata};
 
 void Task(void *a);
-void LoadFromCard();
 
 }

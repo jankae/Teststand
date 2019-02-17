@@ -1,5 +1,9 @@
 #include "desktop.hpp"
 #include "dialog.hpp"
+#include "Config.hpp"
+#include "file.hpp"
+#include "log.h"
+#include "cast.hpp"
 
 Desktop::Desktop() {
 	AppCnt = 0;
@@ -8,9 +12,15 @@ Desktop::Desktop() {
 
 	size.x = DISPLAY_WIDTH;
 	size.y = DISPLAY_HEIGHT;
+
+	configIndex = Config::AddParseFunctions(
+			pmf_cast<bool (*)(void*), Desktop, &Desktop::WriteConfig>::cfn,
+			pmf_cast<bool (*)(void*), Desktop, &Desktop::ReadConfig>::cfn,
+			this);
 }
 
 Desktop::~Desktop() {
+	Config::RemoveParseFunctions(configIndex);
 }
 
 bool Desktop::AddApp(App& app) {
@@ -22,9 +32,30 @@ bool Desktop::AddApp(App& app) {
 	return true;
 }
 
+bool Desktop::FocusOnApp(App* app) {
+	for (uint8_t i = 0; i < AppCnt; i++) {
+		if (apps[i] == app) {
+			if (focussed != i) {
+				/* bring app into focus */
+				if (focussed != -1 && apps[focussed]->topWidget) {
+					apps[focussed]->topWidget->setSelectable(false);
+				}
+				focussed = i;
+				if (apps[i]->topWidget) {
+					apps[focussed]->topWidget->setSelectable(true);
+					apps[i]->topWidget->requestRedrawFull();
+				}
+				this->requestRedraw();
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 void Desktop::draw(coords_t offset) {
-	// check if focussed app is still running
-	if (apps[focussed]->state != App::State::Running) {
+	// always focus on running app
+	if (focussed == -1 || apps[focussed]->state != App::State::Running) {
 		// app was closed, switch focus to next app
 		uint8_t i;
 		for (i = 0; i < AppCnt; i++) {
@@ -110,30 +141,16 @@ void Desktop::input(GUIEvent_t* ev) {
 				switch (apps[app]->state) {
 				case App::State::Stopped:
 					/* start app */
-					apps[app]->state = App::State::Starting;
-					if (!apps[app]->Start()) {
-						apps[app]->state = App::State::Stopped;
-						Dialog::MessageBox("ERROR", Font_Big,
-								"App failed to start", Dialog::MsgBox::OK,
-								nullptr, false);
-					} else {
-						this->requestRedraw();
-					}
-					/* No break */
+				{
+					GUIEvent_t ev;
+					ev.type = EVENT_APP_START;
+					ev.app = apps[app];
+					GUI::SendEvent(&ev);
+				}
+					break;
 				case App::State::Running:
 				case App::State::Starting:
-					if (focussed != app) {
-						/* bring app into focus */
-						if(apps[focussed]->topWidget) {
-							apps[focussed]->topWidget->setSelectable(false);
-						}
-						focussed = app;
-						if (apps[app]->topWidget) {
-							apps[focussed]->topWidget->setSelectable(true);
-							apps[app]->topWidget->requestRedrawFull();
-						}
-						this->requestRedraw();
-					}
+					FocusOnApp(apps[app]);
 					break;
 				default:
 					/* do nothing */
@@ -157,7 +174,10 @@ void Desktop::input(GUIEvent_t* ev) {
 					Dialog::MessageBox("Close?", Font_Big, "Close this app?",
 							Dialog::MsgBox::ABORT_OK, [](Dialog::Result res) {
 								if(res == Dialog::Result::OK) {
-									AppToClose->Stop();
+									GUIEvent_t ev;
+									ev.type = EVENT_APP_STOP;
+									ev.app = AppToClose;
+									GUI::SendEvent(&ev);
 								}
 							}, false);
 					break;
@@ -178,4 +198,61 @@ void Desktop::drawChildren(coords_t offset) {
 	if (focussed != -1 && apps[focussed]->topWidget) {
 		Widget::draw(apps[focussed]->topWidget, offset);
 	}
+}
+
+bool Desktop::WriteConfig() {
+	File::WriteLine("# Apps configuration\n");
+	for (uint8_t i = 0; i < AppCnt; i++) {
+		char name[50] = "App::";
+		strncat(name, apps[i]->info.name, sizeof(name) - 15);
+		strcat(name, "::Running");
+		bool running = apps[i]->state == App::State::Running;
+		File::Entry entry = { name, &running, File::PointerType::BOOL };
+		File::WriteParameters(&entry, 1);
+	}
+	return true;
+}
+
+bool Desktop::ReadConfig() {
+	for (uint8_t i = 0; i < AppCnt; i++) {
+		char name[50] = "App::";
+		strncat(name, apps[i]->info.name, sizeof(name) - 15);
+		strcat(name, "::Running");
+		bool running = false;
+		File::Entry entry = { name, &running, File::PointerType::BOOL };
+		File::ReadParameters(&entry, 1);
+		/*
+		 * Start/stop apps to comply to configuration. Needs to wait for
+		 * the app to actually start/stop because the apps themselves might
+		 * add/remove configuration read functions
+		 */
+		if (running && apps[i]->state == App::State::Stopped) {
+			GUIEvent_t ev;
+			ev.type = EVENT_APP_START;
+			ev.app = apps[i];
+			GUI::SendEvent(&ev);
+			constexpr uint32_t maxStartDelay = 2500;
+			uint32_t start = HAL_GetTick();
+			while (apps[i]->state != App::State::Running) {
+				vTaskDelay(10);
+				if (HAL_GetTick() - start > maxStartDelay) {
+					LOG(Log_Desktop, LevelWarn, "App didn't start in time");
+				}
+			}
+		} else if(!running && apps[i]->state == App::State::Running) {
+			GUIEvent_t ev;
+			ev.type = EVENT_APP_STOP;
+			ev.app = apps[i];
+			GUI::SendEvent(&ev);
+			constexpr uint32_t maxStopDelay = 2500;
+			uint32_t start = HAL_GetTick();
+			while (apps[i]->state != App::State::Stopped) {
+				vTaskDelay(10);
+				if (HAL_GetTick() - start > maxStopDelay) {
+					LOG(Log_Desktop, LevelWarn, "App didn't close in time");
+				}
+			}
+		}
+	}
+	return true;
 }

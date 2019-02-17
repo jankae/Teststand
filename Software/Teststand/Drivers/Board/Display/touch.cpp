@@ -60,35 +60,57 @@ static uint16_t ADS7843_Read(uint8_t control) {
 	return 4095 - res;
 }
 
-static void touch_SampleADC(int16_t *rawX, int16_t *rawY, uint16_t samples) {
+static bool touch_SampleADC(int16_t *rawX, int16_t *rawY, uint16_t samples) {
 	uint16_t i;
 	int32_t X = 0;
 	int32_t Y = 0;
+	int16_t Xmax = INT16_MIN, Ymax = INT16_MIN;
+	int16_t Xmin = INT16_MAX, Ymin = INT16_MAX;
 	for (i = 0; i < samples; i++) {
-		X += ADS7843_Read(
+		int16_t xsample = ADS7843_Read(
 		CHANNEL_X | DIFFERENTIAL | BITS12 | PD_PENIRQ);
+		X += xsample;
+		if (xsample > Xmax) {
+			Xmax = xsample;
+		}
+		if (xsample < Xmin) {
+			Xmin = xsample;
+		}
 	}
 	for (i = 0; i < samples; i++) {
-
-		Y += ADS7843_Read(
+		int16_t ysample = ADS7843_Read(
 		CHANNEL_Y | DIFFERENTIAL | BITS12 | PD_PENIRQ);
+		Y += ysample;
+		if (ysample > Ymax) {
+			Ymax = ysample;
+		}
+		if (ysample < Ymin) {
+			Ymin = ysample;
+		}
 	}
 	*rawX = X / samples;
 	*rawY = Y / samples;
+	constexpr uint16_t maxDiff = 500;
+	if (Xmax - Xmin > maxDiff || Ymax - Ymin > maxDiff) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 bool Touch::GetCoordinates(coords_t &c) {
 	if (PENIRQ()) {
 		uint16_t rawY, rawX;
+		bool valid = false;
 		/* screen is being touched */
 		/* Acquire SPI resource */
 		if (xSemaphoreTake(xMutexSPI1, 10)) {
-			touch_SampleADC(&c.x, &c.y, 20);
+			 valid = touch_SampleADC(&c.x, &c.y, 20);
 			/* Release SPI resource */
 			xSemaphoreGive(xMutexSPI1);
 		} else {
 			/* SPI is busy */
-			return true;
+			return false;
 		}
 		if (!PENIRQ()) {
 			/* touch has been released during measurement */
@@ -105,7 +127,7 @@ bool Touch::GetCoordinates(coords_t &c) {
 //			c.y = 0;
 //		else if(c.y >= TOUCH_RESOLUTION_Y)
 //			c.y = TOUCH_RESOLUTION_Y - 1;
-		return true;
+		return valid;
 	} else {
 		return false;
 	}

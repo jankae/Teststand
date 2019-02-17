@@ -103,6 +103,7 @@ void Button::input(GUIEvent_t *ev) {
 			pressed = true;
 			requestRedraw();
 		}
+		ev->type = EVENT_NONE;
 		break;
     case EVENT_TOUCH_RELEASED:
 		if (pressed && selectable) {
@@ -111,6 +112,7 @@ void Button::input(GUIEvent_t *ev) {
 			if (cb)
 				cb(ptr, this);
 		}
+		ev->type = EVENT_NONE;
 		break;
 //	case EVENT_BUTTON_CLICKED:
 //		if (ev->button & (BUTTON_UNIT1 | BUTTON_ENCODER)) {

@@ -1,5 +1,6 @@
 #include "gui.hpp"
 #include "log.h"
+#include "App.hpp"
 
 QueueHandle_t GUIeventQueue = NULL;
 Widget *topWidget;
@@ -48,6 +49,26 @@ static void guiThread(void) {
 //					break;
 				case EVENT_WINDOW_CLOSE:
 					topWidget->requestRedrawFull();
+					break;
+				case EVENT_APP_START:
+					event.app->Start();
+					break;
+				case EVENT_APP_STARTED:
+					if (event.app->topWidget) {
+						event.app->d->addChild(event.app->topWidget,
+								COORDS(40, 0));
+						event.app->d->requestRedrawFull();
+						event.app->d->FocusOnApp(event.app);
+					}
+					break;
+				case EVENT_APP_STOP:
+					event.app->Stop();
+					break;
+				case EVENT_APP_EXITED:
+					if (event.app->topWidget) {
+						delete event.app->topWidget;
+						event.app->d->requestRedrawFull();
+					}
 					break;
 				default:
 					break;

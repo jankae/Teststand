@@ -30,7 +30,8 @@ private:
 	int32_t updatePeriod;
 	int32_t setValue;
 	bool communicationOK;
-	TaskHandle_t handle;
+	volatile TaskHandle_t handle;
+	volatile bool taskExit;
 	int32_t motorCurrent;
 	Label *lState;
 	I2C_HandleTypeDef *i2c;

@@ -13,10 +13,14 @@ public:
 	~Desktop();
 
 	bool AddApp(App &app);
+	bool FocusOnApp(App *app);
 private:
 	void draw(coords_t offset) override;
 	void input(GUIEvent_t *ev) override;
 	void drawChildren(coords_t offset) override;
+
+	bool WriteConfig();
+	bool ReadConfig();
 
 	Widget::Type getType() override { return Widget::Type::Desktop; };
 
@@ -31,5 +35,6 @@ private:
 	std::array<App*, MaxApps> apps;
 	uint8_t AppCnt;
 	int8_t focussed;
+	uint32_t configIndex;
 };
 

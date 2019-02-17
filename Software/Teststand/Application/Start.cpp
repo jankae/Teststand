@@ -13,6 +13,8 @@
 #include "Loadcells.hpp"
 #include "LoadcellSetup.hpp"
 #include "DriverControl.hpp"
+#include "Config.hpp"
+#include "Setup.hpp"
 
 extern ADC_HandleTypeDef hadc1;
 //extern SPI_HandleTypeDef hspi1;
@@ -86,6 +88,7 @@ constexpr uint8_t nTests = sizeof(Selftests) / sizeof(Selftests[0]);
 void Start() {
 	log_init();
 	LOG(Log_App, LevelInfo, "Start");
+	Config::Init();
 
 	xMutexSPI1 = xSemaphoreCreateMutexStatic(&xSemSPI1);
 
@@ -139,13 +142,23 @@ void Start() {
 	app.descr = "Calibrate and configure loadcells";
 	app.icon = &LoadcellSetup::Icon;
 	new App(app, d);
+
 	App::Info app2;
 	app2.task = DriverControl::Task;
-	app2.StackSize = 256;
+	app2.StackSize = 512;
 	app2.name = "Motor driver";
 	app2.descr = "Setup and control the motor";
 	app2.icon = &DriverControl::Icon;
 	new App(app2, d);
+
+	App::Info app3;
+	app3.task = Setup::Task;
+	app3.StackSize = 768;
+	app3.name = "Setup";
+	app3.descr = "Configure device settings";
+	app3.icon = &Setup::Icon;
+	new App(app3, d);
+
 	GUI::Init(d);
 
 

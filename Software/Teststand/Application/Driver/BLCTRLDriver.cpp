@@ -10,6 +10,7 @@ BLCTRLDriver::BLCTRLDriver(coords_t displaySize) {
 	features.Control.Percentage = true;
 	features.Readback.Current = true;
 
+	taskExit = false;
 	vCutoff = cutoffDefault;
 	i2cAddress = defaultI2CAddress;
 	running = false;
@@ -54,10 +55,11 @@ BLCTRLDriver::~BLCTRLDriver() {
 	if (topWidget) {
 		delete topWidget;
 	}
-	if(handle) {
-		vTaskDelete(handle);
+	taskExit = true;
+	while(handle) {
+		vTaskDelay(10);
 	}
-	HAL_I2C_DeInit(i2c);
+//	HAL_I2C_DeInit(i2c);
 }
 
 bool BLCTRLDriver::SetRunning(bool running) {
@@ -83,7 +85,7 @@ Driver::Readback BLCTRLDriver::GetData() {
 void BLCTRLDriver::Task() {
 	uint32_t lastRun = xTaskGetTickCount();
 	uint32_t residual = 0;
-	while(1) {
+	while(!taskExit) {
 		residual += updatePeriod;
 		vTaskDelayUntil(&lastRun, residual / 1000);
 		residual %= 1000;
@@ -112,4 +114,6 @@ void BLCTRLDriver::Task() {
 			lastRun = xTaskGetTickCount();
 		}
 	}
+	handle = nullptr;
+	vTaskDelete(nullptr);
 }

@@ -12,6 +12,8 @@ public:
 	Readback GetData() override;
 private:
 	void UpdatePPM(Widget* = nullptr);
+	bool WriteConfig();
+	bool ReadConfig();
 	static constexpr uint16_t widthOffDefault = 800;
 	static constexpr uint16_t widthMinDefault = 900;
 	static constexpr uint16_t widthMaxDefault = 2200;
@@ -25,5 +27,6 @@ private:
 	int32_t widthMax;
 	int32_t updatePeriod;
 	int32_t setValue;
+	uint32_t configIndex;
 	bool running;
 };

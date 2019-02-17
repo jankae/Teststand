@@ -2,6 +2,7 @@
 
 #include "gui.hpp"
 #include "cast.hpp"
+#include "Config.hpp"
 
 extern I2C_HandleTypeDef hi2c2;
 
@@ -10,6 +11,7 @@ BLDriver::BLDriver(coords_t displaySize) {
 	features.Control.Percentage = true;
 	features.Readback.Current = true;
 
+	taskExit = false;
 	vCutoff = cutoffDefault;
 	i2cAddress = defaultI2CAddress;
 	running = false;
@@ -19,7 +21,7 @@ BLDriver::BLDriver(coords_t displaySize) {
 	motorCurrent = 0;
 	handle = nullptr;
 	i2c = &hi2c2;
-	HAL_I2C_Init(i2c);
+//	HAL_I2C_Init(i2c);
 
 	auto c = new Container(displaySize);
 	c->attach(new Label("I2C addr.:", Font_Big), COORDS(0,2));
@@ -45,19 +47,27 @@ BLDriver::BLDriver(coords_t displaySize) {
 
 	xTaskCreate(
 			pmf_cast<void (*)(void*), BLDriver, &BLDriver::Task>::cfn,
-			"BLCTRL", 256, this, 4, &handle);
+			"BLCTRL", 256, this, 6, &handle);
 
 	topWidget = c;
+
+	configIndex = Config::AddParseFunctions(
+			pmf_cast<Config::WriteFunc, BLDriver, &BLDriver::WriteConfig>::cfn,
+			pmf_cast<Config::ReadFunc, BLDriver, &BLDriver::ReadConfig>::cfn,
+			this);
 }
 
 BLDriver::~BLDriver() {
+	Config::RemoveParseFunctions(configIndex);
+
 	if (topWidget) {
 		delete topWidget;
 	}
-	if(handle) {
-		vTaskDelete(handle);
+	taskExit = true;
+	while(handle) {
+		vTaskDelay(10);
 	}
-	HAL_I2C_DeInit(i2c);
+//	HAL_I2C_DeInit(i2c);
 }
 
 bool BLDriver::SetRunning(bool running) {
@@ -83,7 +93,7 @@ Driver::Readback BLDriver::GetData() {
 void BLDriver::Task() {
 	uint32_t lastRun = xTaskGetTickCount();
 	uint32_t residual = 0;
-	while(1) {
+	while(!taskExit) {
 		residual += updatePeriod;
 		vTaskDelayUntil(&lastRun, residual / 1000);
 		residual %= 1000;
@@ -112,4 +122,31 @@ void BLDriver::Task() {
 			lastRun = xTaskGetTickCount();
 		}
 	}
+	handle = nullptr;
+	vTaskDelete(nullptr);
+}
+
+bool BLDriver::WriteConfig() {
+	File::WriteLine("# BL driver settings\n");
+	const File::Entry entries[] = {
+		{ "Driver::BLDriver::Address", &i2cAddress, File::PointerType::INT32},
+		{ "Driver::BLDriver::vCutoff", &vCutoff, File::PointerType::INT32},
+		{ "Driver::BLDriver::UpdatePeriod", &updatePeriod, File::PointerType::INT32},
+	};
+	File::WriteParameters(entries, 3);
+	return true;
+}
+
+bool BLDriver::ReadConfig() {
+	const File::Entry entries[] = {
+		{ "Driver::BLDriver::Address", &i2cAddress, File::PointerType::INT32},
+		{ "Driver::BLDriver::vCutoff", &vCutoff, File::PointerType::INT32},
+		{ "Driver::BLDriver::UpdatePeriod", &updatePeriod, File::PointerType::INT32},
+	};
+	File::ReadParameters(entries, 3);
+	communicationOK = false;
+	running = false;
+	setValue = 0;
+	topWidget->requestRedrawChildren();
+	return true;
 }

@@ -38,6 +38,8 @@ extern "C" {
 #define Log_Input		(LevelAll)
 #define Log_GUI			(LevelAll)
 #define Log_Loadcell	(LevelAll)
+#define Log_Config		(LevelAll)
+#define Log_Desktop		(LevelAll)
 
 // if LevelDebug is omitted from this mask,
 // debug message will not be logged regardless

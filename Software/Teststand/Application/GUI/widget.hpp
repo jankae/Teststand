@@ -62,7 +62,7 @@ public:
 		}
 	}
 
-	void widget_SetVisible(bool v) {
+	void setVisible(bool v) {
 		if(visible != v) {
 			visible = v;
 			requestRedrawFull();

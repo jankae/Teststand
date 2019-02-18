@@ -171,7 +171,33 @@ void DriverControl::Task(void* a) {
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(sSet, COORDS(135, 10));
 	sSet->setSelectable(false);
-	constexpr coords_t driverSize = COORDS(120, 240);
+
+	constexpr coords_t driverSize = COORDS(120, 170);
+	// Readback widgets
+	Driver::Readback readback;
+	memset(&readback, 0, sizeof(readback));
+	c->attach(new Label("Readback:", Font_Big), COORDS(168, 170));
+	auto *eReadCurrent = new Entry(&readback.current, nullptr, nullptr,
+			Font_Medium, 8, Unit::Current);
+	auto *eReadVoltage = new Entry(&readback.voltage, nullptr, nullptr,
+			Font_Medium, 8, Unit::Voltage);
+	auto *eReadRPM = new Entry(&readback.RPM, nullptr, nullptr,
+			Font_Medium, 8, Unit::None);
+	auto *eReadThrust = new Entry(&readback.thrust, nullptr, nullptr,
+			Font_Medium, 8, Unit::Force);
+	eReadCurrent->setSelectable(false);
+	eReadCurrent->setVisible(false);
+	eReadVoltage->setSelectable(false);
+	eReadVoltage->setVisible(false);
+	eReadRPM->setSelectable(false);
+	eReadRPM->setVisible(false);
+	eReadThrust->setSelectable(false);
+	eReadThrust->setVisible(false);
+
+	c->attach(eReadCurrent, COORDS(166, 190));
+	c->attach(eReadVoltage, COORDS(223, 190));
+	c->attach(eReadRPM, COORDS(166, 210));
+	c->attach(eReadThrust, COORDS(223, 210));
 
 	uint32_t configIndex = Config::AddParseFunctions(WriteConfig, ReadConfig,
 			xTaskGetCurrentTaskHandle());
@@ -183,6 +209,7 @@ void DriverControl::Task(void* a) {
 		if (xTaskNotifyWait(0, 0xFFFFFFFF, &n, 100)) {
 			if (n & DRIVER_CHANGE) {
 				settings->motorOn = false;
+				memset(&readback, 0, sizeof(readback));
 				cOn->requestRedrawFull();
 				if (pDriver) {
 					delete pDriver;
@@ -206,20 +233,20 @@ void DriverControl::Task(void* a) {
 					cOn->setSelectable(false);
 					eSet->setSelectable(false);
 					sSet->setSelectable(false);
+					eReadCurrent->setVisible(false);
+					eReadVoltage->setVisible(false);
+					eReadRPM->setVisible(false);
+					eReadThrust->setVisible(false);
 				} else {
 					auto f = pDriver->GetFeatures();
-					if (f.OnOff) {
-						cOn->setSelectable(true);
-					}
-					if (f.Control.Percentage) {
-						rPercent->setSelectable(true);
-					}
-					if (f.Control.RPM) {
-						rRPM->setSelectable(true);
-					}
-					if (f.Control.Thrust) {
-						rThrust->setSelectable(true);
-					}
+					cOn->setSelectable(f.OnOff);
+					rPercent->setSelectable(f.Control.Percentage);
+					rRPM->setSelectable(f.Control.RPM);
+					rThrust->setSelectable(f.Control.Thrust);
+					eReadCurrent->setVisible(f.Readback.Current);
+					eReadVoltage->setVisible(f.Readback.Voltage);
+					eReadRPM->setVisible(f.Readback.RPM);
+					eReadThrust->setVisible(f.Readback.Thrust);
 					eSet->setSelectable(true);
 					sSet->setSelectable(true);
 					c->attach(pDriver->GetTopWidget(),
@@ -242,6 +269,13 @@ void DriverControl::Task(void* a) {
 				eSet->requestRedraw();
 				sSet->requestRedrawFull();
 			}
+		}
+		if (pDriver) {
+			readback = pDriver->GetData();
+			eReadCurrent->requestRedraw();
+			eReadVoltage->requestRedraw();
+			eReadRPM->requestRedraw();
+			eReadThrust->requestRedraw();
 		}
 		if (app->Closed()) {
 			if (pDriver) {

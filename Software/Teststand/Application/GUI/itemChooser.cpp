@@ -74,6 +74,7 @@ void ItemChooser::draw(coords_t offset) {
 		} else {
 			display_SetBackground(COLOR_BG_DEFAULT);
 		}
+		display_SetFont(font);
 		display_String(upperLeft.x + 1, upperLeft.y + 2 + line * font.height,
 				itemlist[index]);
 		/* fill rectangle between text and and scrollbar begin with background color */

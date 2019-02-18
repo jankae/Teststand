@@ -54,37 +54,37 @@ PPMDriver::PPMDriver(coords_t displaySize) {
 
 	auto c = new Container(displaySize);
 	c->attach(new Label("Pulsewidth", Font_Big), COORDS(0,2));
-	c->attach(new Label("Min:", Font_Big), COORDS(15,30));
+	c->attach(new Label("Min:", Font_Big), COORDS(15,20));
 	auto eMin = new Entry(&widthMin, widthHigh, widthLow, Font_Big, 7,
 			Unit::Time);
 	eMin->setCallback(
 			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
 			this);
-	c->attach(eMin, COORDS(15,50));
+	c->attach(eMin, COORDS(15,36));
 
-	c->attach(new Label("Cutoff:", Font_Big), COORDS(15,80));
+	c->attach(new Label("Cutoff:", Font_Big), COORDS(15,57));
 	auto eCutoff = new Entry(&widthCutoff, widthHigh, widthLow, Font_Big, 7,
 			Unit::Time);
 	eCutoff->setCallback(
 			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
 			this);
-	c->attach(eCutoff, COORDS(15, 100));
+	c->attach(eCutoff, COORDS(15, 73));
 
-	c->attach(new Label("Max:", Font_Big), COORDS(15,130));
+	c->attach(new Label("Max:", Font_Big), COORDS(15,94));
 	auto eMax = new Entry(&widthMax, widthHigh, widthLow, Font_Big, 7,
 			Unit::Time);
 	eMax->setCallback(
 			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
 			this);
-	c->attach(eMax, COORDS(15, 150));
+	c->attach(eMax, COORDS(15, 110));
 
-	c->attach(new Label("Period:", Font_Big), COORDS(15, 190));
+	c->attach(new Label("Period:", Font_Big), COORDS(15, 131));
 	auto ePeriod = new Entry(&updatePeriod, updataPeriodMax, updataPeriodMin,
 			Font_Big, 7, Unit::Time);
 	ePeriod->setCallback(
 			pmf_cast<void (*)(void*, Widget*), PPMDriver, &PPMDriver::UpdatePPM>::cfn,
 			this);
-	c->attach(ePeriod, COORDS(15, 210));
+	c->attach(ePeriod, COORDS(15, 147));
 
 	topWidget = c;
 

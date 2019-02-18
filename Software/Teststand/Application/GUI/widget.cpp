@@ -68,7 +68,9 @@ void Widget::draw(Widget *w, coords_t pos) {
 			w->redrawClear = false;
 		}
 		/* draw widget */
-		w->draw(pos);
+		if (w->visible) {
+			w->draw(pos);
+		}
 		/* clear redraw request */
 		w->redraw = false;
 	}
@@ -200,6 +202,10 @@ void Widget::requestRedrawChildren() {
 }
 
 void Widget::requestRedraw() {
+	if (!visible) {
+		// no need to redraw an invisible widget
+		return;
+	}
 	/* mark this widget */
 	redraw = true;
 	Widget *w = parent;

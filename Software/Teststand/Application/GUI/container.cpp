@@ -281,7 +281,7 @@ void Container::drawChildren(coords_t offset) {
 
     /* draw its children */
     for (; child; child = child->next) {
-		if (child->visible/* && !child->selected*/) {
+//		if (child->visible/* && !child->selected*/) {
 			/* check if child is at least partially in viewing field */
 			if (child->position.x + child->size.x >= canvasOffset.x
 					&& child->position.y + child->size.y >= canvasOffset.y
@@ -290,7 +290,7 @@ void Container::drawChildren(coords_t offset) {
 				/* draw this child */
 				Widget::draw(child, offset);
 			}
-        }
+//        }
     }
 //    /* always draw selected child last (might overwrite other children) */
 //    if (selected) {

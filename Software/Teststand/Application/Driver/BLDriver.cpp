@@ -10,6 +10,9 @@ BLDriver::BLDriver(coords_t displaySize) {
 	features.OnOff = true;
 	features.Control.Percentage = true;
 	features.Readback.Current = true;
+	features.Readback.RPM = true;
+	features.Readback.Thrust = true;
+	features.Readback.Voltage = true;
 
 	taskExit = false;
 	vCutoff = cutoffDefault;
@@ -27,23 +30,23 @@ BLDriver::BLDriver(coords_t displaySize) {
 	c->attach(new Label("I2C addr.:", Font_Big), COORDS(0,2));
 	auto eAddr = new Entry(&i2cAddress, 0xFF, 0x00, Font_Big, 4,
 			Unit::Hex);
-	c->attach(eAddr, COORDS(15,20));
+	c->attach(eAddr, COORDS(15,18));
 
-	c->attach(new Label("Cutoff:", Font_Big), COORDS(0,50));
+	c->attach(new Label("Cutoff:", Font_Big), COORDS(0,39));
 	auto eCutoff = new Entry(&vCutoff, cutoffMax, cutoffMin, Font_Big, 7,
 			Unit::Percent);
-	c->attach(eCutoff, COORDS(15, 70));
+	c->attach(eCutoff, COORDS(15, 55));
 
-	c->attach(new Label("Period:", Font_Big), COORDS(15, 100));
+	c->attach(new Label("Period:", Font_Big), COORDS(15, 76));
 	auto ePeriod = new Entry(&updatePeriod, updatePeriodMax, updatePeriodMin,
 			Font_Big, 7, Unit::Time);
-	c->attach(ePeriod, COORDS(15, 120));
+	c->attach(ePeriod, COORDS(15, 92));
 
-	c->attach(new Label("Status:", Font_Big), COORDS(15, 150));
+	c->attach(new Label("Status:", Font_Big), COORDS(15, 113));
 	lState = new Label(6, Font_Big, Label::Orientation::CENTER);
 	lState->setColor(COLOR_RED);
 	lState->setText("NO ACK");
-	c->attach(lState, COORDS(21, 170));
+	c->attach(lState, COORDS(21, 129));
 
 	xTaskCreate(
 			pmf_cast<void (*)(void*), BLDriver, &BLDriver::Task>::cfn,
@@ -86,7 +89,10 @@ bool BLDriver::SetControl(ControlMode mode, int32_t value) {
 
 Driver::Readback BLDriver::GetData() {
 	Readback ret;
-	memset(&ret, 0, sizeof(ret));
+	ret.voltage = out.Voltage * 1000;
+	ret.thrust = out.Thrust;
+	ret.RPM = out.RPM;
+	ret.current = out.Current * 1000;
 	return ret;
 }
 
@@ -108,6 +114,10 @@ void BLDriver::Task() {
 		}
 		bool ok = HAL_I2C_Mem_Write(i2c, i2cAddress, 0, I2C_MEMADD_SIZE_8BIT,
 				(uint8_t*) &driver, sizeof(driver), 50) == HAL_OK;
+		if (ok) {
+			ok = HAL_I2C_Mem_Read(i2c, i2cAddress, 0, I2C_MEMADD_SIZE_8BIT,
+					(uint8_t*) &out, sizeof(out), 20) == HAL_OK;
+		}
 		if (ok != communicationOK) {
 			communicationOK = ok;
 			if (ok) {

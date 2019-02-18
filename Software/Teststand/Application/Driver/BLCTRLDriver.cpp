@@ -26,23 +26,23 @@ BLCTRLDriver::BLCTRLDriver(coords_t displaySize) {
 	c->attach(new Label("I2C addr.:", Font_Big), COORDS(0,2));
 	auto eAddr = new Entry(&i2cAddress, 0xFF, 0x00, Font_Big, 4,
 			Unit::Hex);
-	c->attach(eAddr, COORDS(15,20));
+	c->attach(eAddr, COORDS(15,18));
 
-	c->attach(new Label("Cutoff:", Font_Big), COORDS(0,50));
+	c->attach(new Label("Cutoff:", Font_Big), COORDS(0,39));
 	auto eCutoff = new Entry(&vCutoff, cutoffMax, cutoffMin, Font_Big, 4,
 			Unit::None);
-	c->attach(eCutoff, COORDS(15, 70));
+	c->attach(eCutoff, COORDS(15, 55));
 
-	c->attach(new Label("Period:", Font_Big), COORDS(15, 100));
+	c->attach(new Label("Period:", Font_Big), COORDS(15, 76));
 	auto ePeriod = new Entry(&updatePeriod, updatePeriodMax, updatePeriodMin,
 			Font_Big, 7, Unit::Time);
-	c->attach(ePeriod, COORDS(15, 120));
+	c->attach(ePeriod, COORDS(15, 92));
 
-	c->attach(new Label("Status:", Font_Big), COORDS(15, 150));
+	c->attach(new Label("Status:", Font_Big), COORDS(15, 113));
 	lState = new Label(6, Font_Big, Label::Orientation::CENTER);
 	lState->setColor(COLOR_RED);
 	lState->setText("NO ACK");
-	c->attach(lState, COORDS(21, 170));
+	c->attach(lState, COORDS(21, 129));
 
 	xTaskCreate(
 			pmf_cast<void (*)(void*), BLCTRLDriver, &BLCTRLDriver::Task>::cfn,

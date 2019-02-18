@@ -29,6 +29,13 @@ private:
 		int32_t value;
 		DriverMode mode;
 	} __attribute__ ((packed));
+	using OutState = struct {
+		int32_t Current;
+		int32_t Voltage;
+		int32_t RPM;
+		int32_t Thrust;
+		int32_t Torque;
+	} __attribute__ ((packed));
 
 	static constexpr uint8_t defaultI2CAddress = 0x50;
 	static constexpr uint32_t cutoffDefault = 10000000;
@@ -49,4 +56,5 @@ private:
 	Label *lState;
 	I2C_HandleTypeDef *i2c;
 	int32_t configIndex;
+	OutState out;
 };

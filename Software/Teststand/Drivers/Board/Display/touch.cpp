@@ -90,7 +90,7 @@ static bool touch_SampleADC(int16_t *rawX, int16_t *rawY, uint16_t samples) {
 	}
 	*rawX = X / samples;
 	*rawY = Y / samples;
-	constexpr uint16_t maxDiff = 500;
+	constexpr uint16_t maxDiff = 1000;
 	if (Xmax - Xmin > maxDiff || Ymax - Ymin > maxDiff) {
 		return false;
 	} else {

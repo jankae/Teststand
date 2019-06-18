@@ -25,6 +25,8 @@ FRESULT File::Open(const char* filename, BYTE mode) {
 		FRESULT res = f_open(&file, filename, mode);
 		if (res == FR_OK) {
 			fileOpened = true;
+		} else {
+			xSemaphoreGive(fileAccess);
 		}
 		return res;
 	} else {

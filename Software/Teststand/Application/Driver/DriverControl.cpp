@@ -8,6 +8,7 @@
 #include "gui.hpp"
 #include "file.hpp"
 #include "Config.hpp"
+#include "progress.hpp"
 
 const char *drivers[] = {
 		"None",
@@ -28,6 +29,8 @@ enum class Notification : uint32_t {
 #define CONTROL_MODE_CHANGE		0x02
 #define MOTOR_ON_OFF			0x04
 #define SET_POINT_CHANGE		0x08
+#define CONFIGURE_RAMP			0x10
+#define RUN_RAMP				0x20
 
 using DriverSettings = struct {
 	uint8_t driver;
@@ -36,7 +39,15 @@ using DriverSettings = struct {
 	int32_t setpoint;
 };
 
+using RampSettings = struct {
+	int32_t start, stop;
+	int32_t steps;
+	int32_t length;
+	char filename[15];
+};
+
 static DriverSettings *settings;
+static RampSettings *ramp;
 
 static bool WriteConfig(void *ptr) {
 	if (!settings) {
@@ -92,12 +103,74 @@ static bool ReadConfig(void *ptr) {
 	return true;
 }
 
+static void ConfigureRamp(void) {
+	Window *w = new Window("Configure ramp", Font_Big, COORDS(320, 240));
+	Container *c = new Container(w->getAvailableArea());
+	c->attach(new Label("Start:", Font_Big), COORDS(0, 5));
+	c->attach(new Label("Stop:", Font_Big), COORDS(0, 30));
+	c->attach(new Label("Steps:", Font_Big), COORDS(0, 55));
+	c->attach(new Label("Length:", Font_Big), COORDS(0, 80));
+
+	const Unit::unit **u = Unit::None;
+	switch (settings->control) {
+	case Driver::ControlMode::Percentage:
+		u = Unit::Percent;
+		break;
+	case Driver::ControlMode::RPM:
+		u = Unit::None;
+		break;
+	case Driver::ControlMode::Thrust:
+		u = Unit::Force;
+		break;
+	}
+
+	c->attach(new Entry(&ramp->start, nullptr, nullptr, Font_Big, 8, u),
+			COORDS(85, 3));
+	c->attach(new Entry(&ramp->stop, nullptr, nullptr, Font_Big, 8, u),
+			COORDS(85, 28));
+	c->attach(
+			new Entry(&ramp->steps, nullptr, nullptr, Font_Big, 8, Unit::None),
+			COORDS(85, 53));
+	c->attach(new Entry(&ramp->length, 0, 1800000000, Font_Big, 8, Unit::Time),
+			COORDS(85, 78));
+
+	auto start = new Button("Start", Font_Big, [](void *ptr, Widget *w) {
+		TaskHandle_t h = (TaskHandle_t) ptr;
+		xTaskNotify(h, RUN_RAMP,
+				eSetBits);
+			}, xTaskGetCurrentTaskHandle(),
+			COORDS(c->getSize().y / 2 - 10, c->getSize().y / 2 - 10));
+	auto abort = new Button("Abort", Font_Big, [](void *ptr, Widget *w) {
+		Window *window = (Window*) ptr;
+		delete window;
+	}, w, COORDS(c->getSize().y / 2 - 10, c->getSize().y / 2 - 10));
+
+	c->attach(start, COORDS(c->getSize().x - start->getSize().x - 5, 5));
+	c->attach(abort,
+			COORDS(c->getSize().x - start->getSize().x - 5,
+					10 + start->getSize().y));
+
+	w->setMainWidget(c);
+}
+
+static void RunRamp(void) {
+	constexpr uint16_t samples = 100;
+	constexpr uint32_t deltaT = pdMS_TO_TICKS(20);
+	auto p = new ProgressDialog("Running ramp...", 0);
+	for(uint16_t i=0;i<samples;i++) {
+		p->SetPercentage(i * 100 / samples);
+		vTaskDelay(deltaT);
+	}
+	delete p;
+}
+
 void DriverControl::Task(void* a) {
 	App *app = (App*) a;
 	LOG(Log_App, LevelInfo, "Driver task");
 	Driver *pDriver = nullptr;
 
 	settings = new DriverSettings;
+	ramp = new RampSettings;
 
 	auto c = new Container(COORDS(280, 240));
 
@@ -125,16 +198,16 @@ void DriverControl::Task(void* a) {
 	settings->control = Driver::ControlMode::Percentage;
 	auto *rPercent = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::Percentage);
-	c->attach(rPercent, COORDS(2, 105));
-	c->attach(new Label("Percent", Font_Big), COORDS(25, 107));
+	c->attach(rPercent, COORDS(2, 103));
+	c->attach(new Label("Percent", Font_Big), COORDS(25, 105));
 	auto *rRPM = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::RPM);
-	c->attach(rRPM, COORDS(2, 130));
-	c->attach(new Label("RPM", Font_Big), COORDS(25, 132));
+	c->attach(rRPM, COORDS(2, 128));
+	c->attach(new Label("RPM", Font_Big), COORDS(25, 130));
 	auto *rThrust = new Radiobutton((uint8_t*) &settings->control, 20,
 			(int) Driver::ControlMode::Thrust);
-	c->attach(rThrust, COORDS(2, 155));
-	c->attach(new Label("Thrust", Font_Big), COORDS(25, 157));
+	c->attach(rThrust, COORDS(2, 153));
+	c->attach(new Label("Thrust", Font_Big), COORDS(25, 155));
 	Radiobutton::Set set;
 	set.cb = [](void *ptr, Widget*,uint8_t) {
 		TaskHandle_t h = (TaskHandle_t) ptr;
@@ -151,7 +224,7 @@ void DriverControl::Task(void* a) {
 	rThrust->setSelectable(false);
 	cOn->setSelectable(false);
 
-	c->attach(new Label("Setpoint:", Font_Big), COORDS(2, 180));
+	c->attach(new Label("Setpoint:", Font_Big), COORDS(2, 176));
 	settings->setpoint = 0;
 	auto *eSet = new Entry(&settings->setpoint, &Unit::maxPercent, &Unit::null,
 			Font_Big, 8, Unit::Percent, COLOR_BLACK);
@@ -160,7 +233,7 @@ void DriverControl::Task(void* a) {
 		xTaskNotify(h, SET_POINT_CHANGE,
 				eSetBits);
 	}, xTaskGetCurrentTaskHandle());
-	c->attach(eSet, COORDS(2, 200));
+	c->attach(eSet, COORDS(2, 196));
 	eSet->setSelectable(false);
 	auto *sSet = new Slider(&settings->setpoint, Unit::maxPercent, Unit::null,
 			COORDS(21, 220));
@@ -171,6 +244,14 @@ void DriverControl::Task(void* a) {
 	}, xTaskGetCurrentTaskHandle());
 	c->attach(sSet, COORDS(135, 10));
 	sSet->setSelectable(false);
+
+	Button *ramp = new Button("RUN RAMP", Font_Big, [](void *ptr, Widget*) {
+		TaskHandle_t h = (TaskHandle_t) ptr;
+		xTaskNotify(h, CONFIGURE_RAMP,
+				eSetBits);
+	}, xTaskGetCurrentTaskHandle());
+	ramp->setSelectable(false);
+	c->attach(ramp, COORDS(2, 217));
 
 	constexpr coords_t driverSize = COORDS(120, 170);
 	// Readback widgets
@@ -233,6 +314,7 @@ void DriverControl::Task(void* a) {
 					cOn->setSelectable(false);
 					eSet->setSelectable(false);
 					sSet->setSelectable(false);
+					ramp->setSelectable(false);
 					eReadCurrent->setVisible(false);
 					eReadVoltage->setVisible(false);
 					eReadRPM->setVisible(false);
@@ -249,6 +331,7 @@ void DriverControl::Task(void* a) {
 					eReadThrust->setVisible(f.Readback.Thrust);
 					eSet->setSelectable(true);
 					sSet->setSelectable(true);
+					ramp->setSelectable(true);
 					c->attach(pDriver->GetTopWidget(),
 							COORDS(c->getSize().x - driverSize.x, 0));
 				}
@@ -269,6 +352,12 @@ void DriverControl::Task(void* a) {
 				eSet->requestRedraw();
 				sSet->requestRedrawFull();
 			}
+			if( n & CONFIGURE_RAMP) {
+				ConfigureRamp();
+			}
+			if( n & RUN_RAMP) {
+				RunRamp();
+			}
 		}
 		if (pDriver) {
 			readback = pDriver->GetData();
@@ -284,6 +373,7 @@ void DriverControl::Task(void* a) {
 			}
 			Config::RemoveParseFunctions(configIndex);
 			delete settings;
+			delete ramp;
 			settings = nullptr;
 			app->Exit();
 			vTaskDelete(nullptr);

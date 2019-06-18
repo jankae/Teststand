@@ -9,7 +9,8 @@
 class Checkbox : public Widget {
 public:
 	using Callback = void (*)(void *, Widget*);
-	Checkbox(bool *value, Callback cb, void *ptr, coords_t size = COORDS(29, 29));
+	Checkbox(bool *value, Callback cb = nullptr, void *ptr = nullptr,
+			coords_t size = COORDS(29, 29));
 
 private:
 	void draw(coords_t offset) override;

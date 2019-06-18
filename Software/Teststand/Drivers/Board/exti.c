@@ -113,6 +113,27 @@ exti_result_t exti_clear_callback(GPIO_TypeDef *gpio, uint16_t pin) {
 	return EXTI_RES_OK;
 }
 
+void exti_get_callback(GPIO_TypeDef* gpio, uint16_t pin, exti_callback_t* cb,
+		void** ptr) {
+	if (!initialized) {
+		exti_init();
+	}
+	ASSERT(pin != 0);
+	uint8_t index = 31 - __builtin_clz(pin);
+	if (entries[index].gpio) {
+		if (gpio != entries[index].gpio) {
+			LOG(Log_Exti, LevelWarn,
+					"Unable to get callback for pin %d, GPIO mismatch (expected %p, got %p)",
+					pin, entries[index].gpio, gpio);
+			*cb = NULL;
+			*ptr = NULL;
+		}
+	}
+
+	*cb = entries[index].cb;
+	*ptr = entries[index].ptr;
+}
+
 static inline void ExtiHandler(uint16_t source) {
 	const uint32_t mask = 1 << source;
 	if (__HAL_GPIO_EXTI_GET_IT(mask) != RESET) {
@@ -159,3 +180,5 @@ void EXTI15_10_IRQHandler(void) {
 	ExtiHandler(14);
 	ExtiHandler(15);
 }
+
+

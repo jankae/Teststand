@@ -174,6 +174,9 @@ static bool SaveCalibration(void) {
 
 
 void Input::Calibrate() {
+	void *ptr;
+	exti_callback_t cb;
+	exti_get_callback(TOUCH_IRQ_GPIO_Port, TOUCH_IRQ_Pin, &cb, &ptr);
 	Touch::ClearPENCallback();
 	coords_t Set1 = { .x = 20, .y = 20 };
 	coords_t Set2 = { .x = DISPLAY_WIDTH - 20, .y = DISPLAY_HEIGHT - 20 };
@@ -192,9 +195,12 @@ void Input::Calibrate() {
 
 	if(!SaveCalibration()) {
 		Dialog::MessageBox("ERROR", Font_Big,
-				"Failed to save touch calibration", Dialog::MsgBox::OK, nullptr,
+				"Failed to save\ntouch calibration", Dialog::MsgBox::OK, nullptr,
 				true);
 	}
+
+	// restore exti callback to input thread
+	Touch::SetPENCallback(cb, ptr);
 }
 
 bool Input::LoadCalibration() {

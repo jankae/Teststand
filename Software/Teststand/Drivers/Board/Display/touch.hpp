@@ -14,8 +14,6 @@ void Init(void);
 bool GetCoordinates(coords_t &c);
 bool SetPENCallback(exti_callback_t cb, void *ptr);
 bool ClearPENCallback(void);
-//void Calibrate(void);
-//uint8_t LoadCalibration(void);
 }
 
 #endif

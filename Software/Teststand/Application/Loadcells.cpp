@@ -13,6 +13,9 @@ static max11254_t max;
 std::array<Loadcells::Cell, Loadcells::MaxCells> Loadcells::cells;
 std::array<bool, Loadcells::MaxCells> Loadcells::enabled;
 max11254_rate_t Loadcells::rate = MAX11254_RATE_CONT1_9_SINGLE50;
+bool Loadcells::invert_cell[3];
+int32_t Loadcells::select_cell[3];
+int32_t Loadcells::factor_torque;
 
 enum class Notification : uint32_t {
 	NewSample,
@@ -74,7 +77,24 @@ static void SetDefaultConfig() {
 	for (auto &i : Loadcells::enabled) {
 		i = false;
 	}
+	Loadcells::invert_cell[(int) Loadcells::MeasCell::Force] = false;
+	Loadcells::invert_cell[(int) Loadcells::MeasCell::Torque1] = true;
+	Loadcells::invert_cell[(int) Loadcells::MeasCell::Torque2] = false;
+	Loadcells::select_cell[(int) Loadcells::MeasCell::Force] = 1;
+	Loadcells::select_cell[(int) Loadcells::MeasCell::Torque1] = 0;
+	Loadcells::select_cell[(int) Loadcells::MeasCell::Torque2] = 2;
+	Loadcells::factor_torque = 50;
 }
+
+static constexpr File::Entry configEntries[] = {
+		{"Loadcell::Force::Cell", &Loadcells::select_cell[(int)Loadcells::MeasCell::Force], File::PointerType::INT8},
+		{"Loadcell::Force::Inv", &Loadcells::invert_cell[(int)Loadcells::MeasCell::Force], File::PointerType::BOOL},
+		{"Loadcell::Torque1::Cell", &Loadcells::select_cell[(int)Loadcells::MeasCell::Torque1], File::PointerType::INT8},
+		{"Loadcell::Torque1::Inv", &Loadcells::invert_cell[(int)Loadcells::MeasCell::Torque1], File::PointerType::BOOL},
+		{"Loadcell::Torque2::Cell", &Loadcells::select_cell[(int)Loadcells::MeasCell::Torque2], File::PointerType::INT8},
+		{"Loadcell::Torque2::Inv", &Loadcells::invert_cell[(int)Loadcells::MeasCell::Torque2], File::PointerType::BOOL},
+		{"Loadcell::Torque::Factor", &Loadcells::factor_torque, File::PointerType::INT32},
+};
 
 static bool ReadConfig(void *ptr) {
 	SetDefaultConfig();
@@ -92,6 +112,11 @@ static bool ReadConfig(void *ptr) {
 		if(File::ReadParameters(entries, 3) == File::ParameterResult::Error) {
 			return false;
 		}
+	}
+	if (File::ReadParameters(configEntries,
+			sizeof(configEntries) / sizeof(configEntries[0]))
+			== File::ParameterResult::Error) {
+		return false;
 	}
 	Loadcells::UpdateSettings();
 	return true;
@@ -112,6 +137,8 @@ static bool WriteConfig(void *ptr) {
 				scale, &Loadcells::cells[i].scale, File::PointerType::FLOAT }, };
 		File::WriteParameters(entries, 3);
 	}
+	File::WriteParameters(configEntries,
+			sizeof(configEntries) / sizeof(configEntries[0]));
 	return true;
 }
 
@@ -144,4 +171,22 @@ void Loadcells::UpdateSettings() {
 		xTaskNotify(handle, (uint32_t ) Notification::NewSettings,
 				eSetValueWithOverwrite);
 	}
+}
+
+Loadcells::Meas Loadcells::Get() {
+	Meas ret;
+	ret.force = cells[select_cell[(int) MeasCell::Force]].uNewton;
+	if (invert_cell[(int) MeasCell::Force]) {
+		ret.force = -ret.force;
+	}
+	int32_t uNew1 = cells[select_cell[(int) MeasCell::Torque1]].uNewton;
+	if (invert_cell[(int) MeasCell::Torque1]) {
+		uNew1 = -uNew1;
+	}
+	int32_t uNew2 = cells[select_cell[(int) MeasCell::Torque2]].uNewton;
+	if (invert_cell[(int) MeasCell::Torque2]) {
+		uNew2 = -uNew2;
+	}
+	ret.torque = ((int64_t) (uNew1 + uNew2) * factor_torque) / 1000;
+	return ret;
 }

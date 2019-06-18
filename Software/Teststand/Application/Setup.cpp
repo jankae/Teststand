@@ -3,10 +3,12 @@
 #include "gui.hpp"
 #include "log.h"
 #include "Config.hpp"
+#include "input.hpp"
 
 enum class Notification : uint32_t {
 	LoadConfig,
 	StoreConfig,
+	CalibrateTouch,
 };
 
 void Setup::Task(void *a) {
@@ -24,6 +26,11 @@ void Setup::Task(void *a) {
 		xTaskNotify(ptr, (uint32_t ) Notification::StoreConfig,
 				eSetValueWithOverwrite);
 	}, xTaskGetCurrentTaskHandle()), COORDS(10, 40));
+
+	c->attach(new Button("Calibrate Touch", Font_Big, [](void *ptr, Widget*) {
+		xTaskNotify(ptr, (uint32_t ) Notification::CalibrateTouch,
+				eSetValueWithOverwrite);
+	}, xTaskGetCurrentTaskHandle()), COORDS(10, 70));
 
 	app->StartComplete(c);
 
@@ -66,6 +73,9 @@ void Setup::Task(void *a) {
 					}
 				}
 			}
+				break;
+			case Notification::CalibrateTouch:
+				Input::Calibrate();
 				break;
 			}
 		}

@@ -137,7 +137,7 @@ void Start() {
 	Desktop d;
 	App::Info app;
 	app.task = LoadcellSetup::Task;
-	app.StackSize = 256;
+	app.StackSize = 512;
 	app.name = "Loadcell setup";
 	app.descr = "Calibrate and configure loadcells";
 	app.icon = &LoadcellSetup::Icon;

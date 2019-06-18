@@ -106,6 +106,41 @@ void LoadcellSetup::Task(void *a) {
 	c->attach(l, COORDS(0, 155));
 	c->attach(iRate, COORDS(2, 173));
 
+	// select loadcells used for teststand parameters
+	c->attach(new Label("Cell: Inv:", Font_Big), COORDS(130, 155));
+	c->attach(new Label("Force:", Font_Big), COORDS(85, 175));
+	c->attach(
+			new Entry(&Loadcells::select_cell[(int) Loadcells::MeasCell::Force],
+					Loadcells::MaxCells - 1, 0, Font_Big, 3, Unit::None),
+			COORDS(155, 175));
+	c->attach(
+			new Checkbox(
+					&Loadcells::invert_cell[(int) Loadcells::MeasCell::Force],
+					nullptr, nullptr, SIZE(19, 19)), COORDS(215, 175));
+	c->attach(new Label("Trq+:", Font_Big), COORDS(85, 195));
+	c->attach(
+			new Entry(&Loadcells::select_cell[(int) Loadcells::MeasCell::Torque1],
+					Loadcells::MaxCells - 1, 0, Font_Big, 3, Unit::None),
+			COORDS(155, 195));
+	c->attach(
+			new Checkbox(
+					&Loadcells::invert_cell[(int) Loadcells::MeasCell::Torque1],
+					nullptr, nullptr, SIZE(19, 19)), COORDS(215, 195));
+	c->attach(new Label("Trq-:", Font_Big), COORDS(85, 215));
+	c->attach(
+			new Entry(&Loadcells::select_cell[(int) Loadcells::MeasCell::Torque2],
+					Loadcells::MaxCells - 1, 0, Font_Big, 3, Unit::None),
+			COORDS(155, 215));
+	c->attach(
+			new Checkbox(
+					&Loadcells::invert_cell[(int) Loadcells::MeasCell::Torque2],
+					nullptr, nullptr, SIZE(19, 19)), COORDS(215, 215));
+
+	c->attach(new Label("Torque factor:", Font_Big), COORDS(85, 255));
+	c->attach(
+			new Entry(&Loadcells::factor_torque, 1000, 0, Font_Big, 6,
+					Unit::Distance), COORDS(125, 275));
+
 	app->StartComplete(c);
 
 	while(1) {
@@ -123,7 +158,7 @@ void LoadcellSetup::Task(void *a) {
 				Loadcells::cells[loadcell].offset = sampleLoadcell(loadcell);
 				break;
 			case Notification::WeightLoadcell: {
-				new ValueInput("Calibration weight?", &calibrationWeight, Unit::Force,
+				new ValueInput("Calibration force?", &calibrationWeight, Unit::Force,
 						[](void*, bool confirmed) {
 					if(confirmed) {
 						if (handle) {

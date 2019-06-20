@@ -25,8 +25,8 @@ static const Unit::unit Wh = {"Wh", 1000000};
 
 static const Unit::unit us = {"us", 1};
 static const Unit::unit ms = {"ms", 1000};
-static const Unit::unit s = {"s", 10000000};
-static const Unit::unit min = {"m", 600000000};
+static const Unit::unit s = {"s", 1000000};
+static const Unit::unit min = {"m", 60000000};
 
 static const Unit::unit B = {"B", 1};
 static const Unit::unit kB = {"kB", 1024};

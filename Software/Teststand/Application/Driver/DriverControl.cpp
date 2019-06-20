@@ -131,7 +131,7 @@ static void ConfigureRamp(void) {
 	c->attach(
 			new Entry(&ramp->steps, nullptr, nullptr, Font_Big, 8, Unit::None),
 			COORDS(85, 53));
-	c->attach(new Entry(&ramp->length, 0, 1800000000, Font_Big, 8, Unit::Time),
+	c->attach(new Entry(&ramp->length, 1800000000, 0, Font_Big, 8, Unit::Time),
 			COORDS(85, 78));
 
 	auto start = new Button("Start", Font_Big, [](void *ptr, Widget *w) {
@@ -153,15 +153,63 @@ static void ConfigureRamp(void) {
 	w->setMainWidget(c);
 }
 
-static void RunRamp(void) {
-	constexpr uint16_t samples = 100;
-	constexpr uint32_t deltaT = pdMS_TO_TICKS(20);
-	auto p = new ProgressDialog("Running ramp...", 0);
-	for(uint16_t i=0;i<samples;i++) {
-		p->SetPercentage(i * 100 / samples);
-		vTaskDelay(deltaT);
+static void RunRamp(Driver *driver) {
+	Window *w = new Window("Running ramp...", Font_Big, COORDS(250, 150));
+	Container *c = new Container(w->getAvailableArea());
+	auto l = new Label(20, Font_Big, Label::Orientation::CENTER);
+	c->attach(l, COORDS(0, 0));
+	auto progress = new ProgressBar(COORDS(c->getSize().x, 30));
+	c->attach(progress, COORDS(0, 20));
+
+	c->attach(new Button("Abort", Font_Big, [](void *ptr, Widget *w) {
+		TaskHandle_t h = (TaskHandle_t) ptr;
+		xTaskNotify(h, 0, eNoAction);
+	}, xTaskGetCurrentTaskHandle(), COORDS(c->getSize().x - 10, 40)),
+			COORDS(5, c->getSize().y - 45));
+	w->setMainWidget(c);
+
+	l->setText("Starting motor...");
+	driver->SetRunning(true);
+	driver->SetControl(settings->control, ramp->start);
+	int32_t i = 0;
+	if (!xTaskNotifyWait(0, 0xFFFFFFFF, nullptr, 2000)) {
+		// not aborted
+		uint32_t start = HAL_GetTick();
+		for (i = 0; i < ramp->steps; i++) {
+			char str[21];
+			snprintf(str, sizeof(str), "Step %ld/%ld", i + 1, ramp->steps);
+			l->setText(str);
+			// calculate control value for this step
+			int32_t val = ramp->start
+					+ (int64_t) (ramp->stop - ramp->start) * i
+							/ (ramp->steps - 1);
+			driver->SetControl(settings->control, val);
+			progress->setState(100 * i / ramp->steps);
+			uint32_t now = HAL_GetTick();
+			uint32_t time_next = start
+					+ (ramp->length / 1000) * (i + 1) / ramp->steps;
+			uint32_t wait = time_next - now;
+			if (wait > INT32_MAX) {
+				wait = 0;
+			}
+			LOG(Log_App, LevelInfo, "now: %lu, next: %lu, wait: %lu", now, time_next,
+					wait);
+			if (xTaskNotifyWait(0, 0xFFFFFFFF, nullptr, wait)) {
+				// abort button pressed
+				break;
+			}
+		}
 	}
-	delete p;
+
+	driver->SetRunning(false);
+	driver->SetControl(settings->control, 0);
+	if(i != ramp->steps) {
+		// ramp was aborted
+	} else {
+		// ramp completed
+	}
+
+	delete w;
 }
 
 void DriverControl::Task(void* a) {
@@ -356,7 +404,7 @@ void DriverControl::Task(void* a) {
 				ConfigureRamp();
 			}
 			if( n & RUN_RAMP) {
-				RunRamp();
+				RunRamp(pDriver);
 			}
 		}
 		if (pDriver) {

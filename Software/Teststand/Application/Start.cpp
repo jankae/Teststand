@@ -164,8 +164,6 @@ void Start() {
 
 	Config::Load("default.cfg");
 
-	vTaskDelete(nullptr);
-
 	while(1) {
 		vTaskDelay(1000);
 	}

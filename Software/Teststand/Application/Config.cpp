@@ -62,7 +62,7 @@ bool Config::RemoveParseFunctions(int index) {
 
 bool Config::Store(const char* filename) {
 	if (File::Open(filename, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) {
-		LOG(Log_Config, LevelError, "Failed to create file");
+		LOG(Log_Config, LevelError, "Failed to\ncreate file");
 		return false;
 	}
 	ConfigEntry *entry = first;
@@ -84,7 +84,7 @@ bool Config::Store(const char* filename) {
 
 bool Config::Load(const char* filename) {
 	if (File::Open(filename, FA_READ | FA_OPEN_EXISTING) != FR_OK) {
-		LOG(Log_Config, LevelError, "Failed to open file");
+		LOG(Log_Config, LevelError, "Failed to\nopen file");
 		return false;
 	}
 	ConfigEntry *entry = first;

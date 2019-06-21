@@ -57,7 +57,7 @@ void Setup::Task(void *a) {
 				break;
 			case Notification::StoreConfig: {
 				char filename[_MAX_LFN + 1];
-				memset(filename, sizeof(filename), 0);
+				memset(filename, 0, sizeof(filename));
 				if (Dialog::StringInputBlock("Config name:", filename, _MAX_LFN - 4)
 						== Dialog::Result::OK) {
 					/* add file extension */
@@ -69,7 +69,7 @@ void Setup::Task(void *a) {
 						LOG(Log_App, LevelError,
 								"Failed to store configuration %s", filename);
 						Dialog::MessageBox("Error", Font_Big,
-								"Failed to store configuration file",
+								"Failed to store\nconfiguration file",
 								Dialog::MsgBox::OK, nullptr, true);
 					}
 				}

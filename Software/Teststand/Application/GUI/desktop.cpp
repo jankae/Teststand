@@ -201,7 +201,7 @@ void Desktop::drawChildren(coords_t offset) {
 }
 
 bool Desktop::WriteConfig() {
-	File::WriteLine("# Apps configuration\n");
+	File::Write("# Apps configuration\n");
 	for (uint8_t i = 0; i < AppCnt; i++) {
 		char name[50] = "App::";
 		strncat(name, apps[i]->info.name, sizeof(name) - 15);

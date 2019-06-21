@@ -16,6 +16,9 @@ max11254_rate_t Loadcells::rate = MAX11254_RATE_CONT1_9_SINGLE50;
 bool Loadcells::invert_cell[3];
 int32_t Loadcells::select_cell[3];
 int32_t Loadcells::factor_torque;
+static uint32_t samples;
+static int64_t forceIntegral;
+static int64_t torqueIntegral;
 
 enum class Notification : uint32_t {
 	NewSample,
@@ -27,6 +30,29 @@ static void conversionComplete(void *ptr) {
 	xTaskNotifyFromISR(handle, (uint32_t ) Notification::NewSample,
 			eSetValueWithoutOverwrite, &yield);
 	portYIELD_FROM_ISR(yield);
+}
+
+static void newSample() {
+	using namespace Loadcells;
+	Meas sample;
+	sample.force = cells[select_cell[(int) MeasCell::Force]].uNewton;
+	if (invert_cell[(int) MeasCell::Force]) {
+		sample.force = -sample.force;
+	}
+	int32_t uNew1 = cells[select_cell[(int) MeasCell::Torque1]].uNewton;
+	if (invert_cell[(int) MeasCell::Torque1]) {
+		uNew1 = -uNew1;
+	}
+	int32_t uNew2 = cells[select_cell[(int) MeasCell::Torque2]].uNewton;
+	if (invert_cell[(int) MeasCell::Torque2]) {
+		uNew2 = -uNew2;
+	}
+	sample.torque = ((int64_t) (uNew1 + uNew2) * factor_torque) / 1000;
+	portENTER_CRITICAL();
+	forceIntegral += sample.force;
+	torqueIntegral += sample.torque;
+	samples++;
+	portEXIT_CRITICAL();
 }
 
 static void loadcelltask(void *ptr) {
@@ -46,6 +72,7 @@ static void loadcelltask(void *ptr) {
 			}
 			max11254_scan_conversion_static_gpio(&max, Loadcells::rate,
 					conversionComplete, nullptr);
+			newSample();
 			break;
 		case Notification::NewSettings:
 			LOG(Log_Loadcell, LevelInfo, "New settings");
@@ -123,7 +150,7 @@ static bool ReadConfig(void *ptr) {
 }
 
 static bool WriteConfig(void *ptr) {
-	File::WriteLine("# Loadcell configuration and calibration\n");
+	File::Write("# Loadcell configuration and calibration\n");
 	for (uint8_t i = 0; i < Loadcells::MaxCells; i++) {
 		char enabled[] = "Loadcell::X::Enabled";
 		char offset[] = "Loadcell::X::Offset";
@@ -175,18 +202,12 @@ void Loadcells::UpdateSettings() {
 
 Loadcells::Meas Loadcells::Get() {
 	Meas ret;
-	ret.force = cells[select_cell[(int) MeasCell::Force]].uNewton;
-	if (invert_cell[(int) MeasCell::Force]) {
-		ret.force = -ret.force;
-	}
-	int32_t uNew1 = cells[select_cell[(int) MeasCell::Torque1]].uNewton;
-	if (invert_cell[(int) MeasCell::Torque1]) {
-		uNew1 = -uNew1;
-	}
-	int32_t uNew2 = cells[select_cell[(int) MeasCell::Torque2]].uNewton;
-	if (invert_cell[(int) MeasCell::Torque2]) {
-		uNew2 = -uNew2;
-	}
-	ret.torque = ((int64_t) (uNew1 + uNew2) * factor_torque) / 1000;
+	portENTER_CRITICAL();
+	ret.force = forceIntegral / samples;
+	ret.torque = torqueIntegral / samples;
+	samples = 0;
+	forceIntegral = 0;
+	torqueIntegral = 0;
+	portEXIT_CRITICAL();
 	return ret;
 }

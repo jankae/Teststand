@@ -137,7 +137,7 @@ void BLDriver::Task() {
 }
 
 bool BLDriver::WriteConfig() {
-	File::WriteLine("# BL driver settings\n");
+	File::Write("# BL driver settings\n");
 	const File::Entry entries[] = {
 		{ "Driver::BLDriver::Address", &i2cAddress, File::PointerType::INT32},
 		{ "Driver::BLDriver::vCutoff", &vCutoff, File::PointerType::INT32},

@@ -50,7 +50,7 @@ bool File::ReadLine(char* dest, uint16_t maxLen) {
 	return f_gets(dest, maxLen, &file) != nullptr;
 }
 
-int File::WriteLine(const char* line) {
+int File::Write(const char* line) {
 	return f_puts(line, &file);
 }
 

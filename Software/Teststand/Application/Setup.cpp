@@ -57,7 +57,8 @@ void Setup::Task(void *a) {
 				break;
 			case Notification::StoreConfig: {
 				char filename[_MAX_LFN + 1];
-				if (Dialog::StringInput("Config name:", filename, _MAX_LFN - 4)
+				memset(filename, sizeof(filename), 0);
+				if (Dialog::StringInputBlock("Config name:", filename, _MAX_LFN - 4)
 						== Dialog::Result::OK) {
 					/* add file extension */
 					strcat(filename, ".CFG");

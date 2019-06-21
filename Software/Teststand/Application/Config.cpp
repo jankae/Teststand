@@ -74,7 +74,7 @@ bool Config::Store(const char* filename) {
 				success = false;
 				break;
 			}
-			File::WriteLine("\n");
+			File::Write("\n");
 		}
 		entry = entry->next;
 	}

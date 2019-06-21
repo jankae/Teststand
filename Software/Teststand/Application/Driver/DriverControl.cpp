@@ -9,6 +9,7 @@
 #include "file.hpp"
 #include "Config.hpp"
 #include "progress.hpp"
+#include "Loadcells.hpp"
 
 const char *drivers[] = {
 		"None",
@@ -53,7 +54,7 @@ static bool WriteConfig(void *ptr) {
 	if (!settings) {
 		return false;
 	}
-	File::WriteLine("# Driver configuration\n");
+	File::Write("# Driver configuration\n");
 	const File::Entry entries[] = {
 		{ "Driver::Driver", (void*) drivers[settings->driver], File::PointerType::STRING},
 		{ "Driver::ControlMode", &settings->control, File::PointerType::INT8},
@@ -150,6 +151,27 @@ static void ConfigureRamp(void) {
 			COORDS(c->getSize().x - start->getSize().x - 5,
 					10 + start->getSize().y));
 
+	c->attach(new Label("Filename:", Font_Big), COORDS(0, 100));
+	auto lname = new Label(14, Font_Big, Label::Orientation::CENTER);
+	lname->setText(ramp->filename);
+	c->attach(lname, COORDS(0, 120));
+	c->attach(new Button("Change", Font_Big, [](void *ptr, Widget *w){
+		// remove file extension (should not be editable)
+		auto c = strchr(ramp->filename, '.');
+		if(c) {
+			*c = 0;
+		}
+		Dialog::StringInput("New filename:", ramp->filename, 10,
+				[](void *ptr, Dialog::Result r){
+			Label *l = (Label*) ptr;
+			// reattach fileextension
+			strcat(ramp->filename, ".csv");
+			if(r == Dialog::Result::OK) {
+				l->setText(ramp->filename);
+			}
+		}, ptr);
+	}, lname), COORDS(20, 140));
+
 	w->setMainWidget(c);
 }
 
@@ -168,15 +190,41 @@ static void RunRamp(Driver *driver) {
 			COORDS(5, c->getSize().y - 45));
 	w->setMainWidget(c);
 
+	// check for already existing file
+	if (File::Open(ramp->filename, FA_OPEN_EXISTING) == FR_OK) {
+		if(Dialog::MessageBox("Warning", Font_Big,
+				"File already\nexists. Overwrite?", Dialog::MsgBox::ABORT_OK,
+				nullptr, true) == Dialog::Result::ABORT) {
+			// abort
+			delete w;
+			return;
+		} else {
+			File::Close();
+		}
+	}
+
+	if (File::Open(ramp->filename, FA_CREATE_ALWAYS | FA_WRITE) != FR_OK) {
+		// failed to create file
+		Dialog::MessageBox("Error", Font_Big, "Failed to\ncreate file",
+				Dialog::MsgBox::OK, nullptr, true);
+		delete w;
+		return;
+	}
+
+	File::Write("Step;Time[ms];Setpoint;Force[N];Torque[Nm]");
+	File::Write("\n");
+
 	l->setText("Starting motor...");
 	driver->SetRunning(true);
 	driver->SetControl(settings->control, ramp->start);
 	int32_t i = 0;
+	// clear average
+	Loadcells::Get();
 	if (!xTaskNotifyWait(0, 0xFFFFFFFF, nullptr, 2000)) {
 		// not aborted
 		uint32_t start = HAL_GetTick();
 		for (i = 0; i < ramp->steps; i++) {
-			char str[21];
+			char str[200];
 			snprintf(str, sizeof(str), "Step %ld/%ld", i + 1, ramp->steps);
 			l->setText(str);
 			// calculate control value for this step
@@ -198,11 +246,21 @@ static void RunRamp(Driver *driver) {
 				// abort button pressed
 				break;
 			}
+			// save measurement of this step to file
+			auto meas = Loadcells::Get();
+			float force = (float) meas.force / 1000000;
+			float torque = (float) meas.torque / 1000000;
+			snprintf(str, sizeof(str), "%ld;%lu;%ld;%f;%f\n", i + 1,
+					time_next - start, val, force, torque);
+			File::Write(str);
 		}
 	}
 
 	driver->SetRunning(false);
 	driver->SetControl(settings->control, 0);
+
+	File::Close();
+
 	if(i != ramp->steps) {
 		// ramp was aborted
 	} else {
@@ -219,6 +277,13 @@ void DriverControl::Task(void* a) {
 
 	settings = new DriverSettings;
 	ramp = new RampSettings;
+
+	// set default ramp values
+	ramp->start = 0;
+	ramp->stop = 100000000;
+	ramp->length = 10000000;
+	ramp->steps = 100;
+	strcpy(ramp->filename, "ramp.csv");
 
 	auto c = new Container(COORDS(280, 240));
 

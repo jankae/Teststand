@@ -22,9 +22,11 @@ struct {
 			uint8_t OKclicked;
 		} fileChooser;
 		struct {
-			SemaphoreHandle_t dialogDone;
-			uint8_t OKclicked;
+			Callback cb;
+			void *ptr;
+			Window *w;
 			char *string;
+			char *destString;
 			Label *lString;
 			uint8_t pos;
 			uint8_t maxLength;
@@ -293,48 +295,49 @@ static void stringInputChar(char c) {
 	}
 }
 
-Result StringInput(const char *title, char *result, uint8_t maxLength) {
-	if(xTaskGetCurrentTaskHandle() == GUIHandle) {
-		/* This dialog must never be called by the GUI thread (Deadlock) */
-		LOG(Log_GUI, LevelCrit, "Dialog started from GUI thread.");
-	}
-
+bool StringInput(const char *title, char *result, uint8_t maxLength,
+		Callback cb, void *ptr) {
 	/* check pointers */
 	if (!title || !result) {
-		return Result::ERR;
+		return false;
 	}
 
 	memset(&dialog, 0, sizeof(dialog));
 
-	dialog.StringInput.dialogDone = xSemaphoreCreateBinary();
-	if(!dialog.StringInput.dialogDone) {
-		/* failed to create semaphore */
-		return Result::ERR;
-	}
-
-	dialog.StringInput.string = result;
+	dialog.StringInput.cb = cb;
+	dialog.StringInput.ptr = ptr;
+	dialog.StringInput.string = new char[maxLength + 1];
+	strncpy(dialog.StringInput.string, result, maxLength);
+	dialog.StringInput.destString = result;
 	dialog.StringInput.maxLength = maxLength;
-	dialog.StringInput.pos = 0;
+	dialog.StringInput.pos = strlen(dialog.StringInput.string);
 
 	memset(result, 0, maxLength);
 
 	/* Create window */
-	Window *w = new Window(title, Font_Big, COORDS(313, 233));
-	Container *c = new Container(w->getAvailableArea());
+	dialog.StringInput.w = new Window(title, Font_Big, COORDS(313, 233));
+	Container *c = new Container(dialog.StringInput.w->getAvailableArea());
 
 	Keyboard *k = new Keyboard(stringInputChar);
 
 	dialog.StringInput.lString = new Label(
 			c->getSize().x / Font_Big.width, Font_Big, Label::Orientation::CENTER);
 
+	dialog.StringInput.lString->setText(dialog.StringInput.string);
+
 	/* Create buttons */
 	Button *bOK = new Button("OK", Font_Big, [](void*, Widget *w) {
-		dialog.StringInput.OKclicked = 1;
-		xSemaphoreGive(dialog.StringInput.dialogDone);
+		strcpy(dialog.StringInput.destString, dialog.StringInput.string);
+		if(dialog.StringInput.cb) {
+			dialog.StringInput.cb(dialog.StringInput.ptr, Result::OK);
+		}
+		delete dialog.StringInput.w;
 	}, nullptr, COORDS(80, 0));
 	Button *bAbort = new Button("ABORT", Font_Big, [](void*, Widget *w) {
-		dialog.StringInput.OKclicked = 0;
-		xSemaphoreGive(dialog.StringInput.dialogDone);
+		if(dialog.StringInput.cb) {
+			dialog.StringInput.cb(dialog.StringInput.ptr, Result::ABORT);
+		}
+		delete dialog.StringInput.w;
 	}, nullptr, COORDS(80, 0));
 
 	c->attach(dialog.StringInput.lString, COORDS(0, 8));
@@ -346,21 +349,39 @@ Result StringInput(const char *title, char *result, uint8_t maxLength) {
 			COORDS(5, c->getSize().y - bAbort->getSize().y - 5));
 
 //	k->select();
-	w->setMainWidget(c);
+	dialog.StringInput.w->setMainWidget(c);
 
-	/* Wait for button to be clicked */
-	xSemaphoreTake(dialog.StringInput.dialogDone, portMAX_DELAY);
-	vPortFree(dialog.StringInput.dialogDone);
-
-	/* delete window */
-	delete w;
-
-	if(dialog.StringInput.OKclicked) {
-		return Result::OK;
-	} else {
-		return Result::ABORT;
-	}
+	return true;
 }
+
+
+Result StringInputBlock(const char* title, char* result, uint8_t maxLength) {
+	if(xTaskGetCurrentTaskHandle() == GUIHandle) {
+		/* This dialog must never be called by the GUI thread (Deadlock) */
+		LOG(Log_GUI, LevelCrit, "Dialog started from GUI thread.");
+	}
+
+	using DataStruct = struct {
+		SemaphoreHandle_t semphr;
+		Result res;
+	};
+	DataStruct data;
+
+	data.semphr = xSemaphoreCreateBinary();
+	if(!StringInput(title, result, maxLength, [](void *ptr, Result r) {
+			DataStruct *d = (DataStruct*) ptr;
+			d->res = r;
+			xSemaphoreGive(d->semphr);
+		}, &data)) {
+		return Result::ERR;
+	}
+
+	xSemaphoreTake(data.semphr, portMAX_DELAY);
+	vSemaphoreDelete(data.semphr);
+
+	return data.res;
+}
+
 
 Result UnitInput(const char *title, int32_t *result, uint8_t maxLength, const Unit::unit *unit[]) {
 	if(xTaskGetCurrentTaskHandle() == GUIHandle) {

@@ -19,7 +19,7 @@ extern std::array<Cell, MaxCells> cells;
 extern std::array<bool, MaxCells> enabled;
 extern max11254_rate_t rate;
 
-using Meas = struct {
+using Meas = struct meas {
 	int32_t force;
 	int32_t torque;
 };

@@ -145,7 +145,7 @@ void Start() {
 
 	App::Info app2;
 	app2.task = DriverControl::Task;
-	app2.StackSize = 512;
+	app2.StackSize = 1024;
 	app2.name = "Motor driver";
 	app2.descr = "Setup and control the motor";
 	app2.icon = &DriverControl::Icon;
@@ -161,6 +161,10 @@ void Start() {
 
 	GUI::Init(d);
 
+
+	Config::Load("default.cfg");
+
+	vTaskDelete(nullptr);
 
 	while(1) {
 		vTaskDelay(1000);

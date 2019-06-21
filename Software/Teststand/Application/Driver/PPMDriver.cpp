@@ -169,7 +169,7 @@ void TIM_HANDLER(void) {
 }
 
 bool PPMDriver::WriteConfig() {
-	File::WriteLine("# PPM driver settings\n");
+	File::Write("# PPM driver settings\n");
 	const File::Entry entries[] = {
 		{ "Driver::PPM::WidthMin", &widthMin, File::PointerType::INT32},
 		{ "Driver::PPM::WidthCutoff", &widthCutoff, File::PointerType::INT32},

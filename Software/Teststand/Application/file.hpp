@@ -32,7 +32,7 @@ FRESULT Init();
 FRESULT Open(const char *filename, BYTE mode);
 FRESULT Close(void);
 bool ReadLine(char *dest, uint16_t maxLen);
-int WriteLine(const char *line);
+int Write(const char *line);
 void WriteParameters(const Entry *paramList, uint8_t length);
 ParameterResult ReadParameters(const Entry *paramList, uint8_t length);
 

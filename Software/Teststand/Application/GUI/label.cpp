@@ -65,5 +65,7 @@ void Label::draw(coords_t offset) {
     display_SetForeground(color);
     display_SetBackground(Background);
 	display_SetFont(font);
-	display_String(offset.x + fontStartX, offset.y, text);
+	if (text) {
+		display_String(offset.x + fontStartX, offset.y, text);
+	}
 }

@@ -212,6 +212,19 @@ static void RunRamp(Driver *driver) {
 	}
 
 	File::Write("Step;Time[ms];Setpoint;Force[N];Torque[Nm]");
+	auto features = driver->GetFeatures();
+	if (features.Readback.RPM) {
+		File::Write(";DriverRPM");
+	}
+	if (features.Readback.Current) {
+		File::Write(";DriverI[A]");
+	}
+	if (features.Readback.Voltage) {
+		File::Write(";DriverV[V]");
+	}
+	if (features.Readback.Thrust) {
+		File::Write(";DriverForce[N]");
+	}
 	File::Write("\n");
 
 	l->setText("Starting motor...");
@@ -248,11 +261,32 @@ static void RunRamp(Driver *driver) {
 			}
 			// save measurement of this step to file
 			auto meas = Loadcells::Get();
+			auto driverData = driver->GetData();
 			float force = (float) meas.force / 1000000;
 			float torque = (float) meas.torque / 1000000;
-			snprintf(str, sizeof(str), "%ld;%lu;%ld;%f;%f\n", i + 1,
+			snprintf(str, sizeof(str), "%ld;%lu;%ld;%f;%f", i + 1,
 					time_next - start, val, force, torque);
 			File::Write(str);
+			if (features.Readback.RPM) {
+				snprintf(str, sizeof(str), ";%ld", driverData.RPM);
+				File::Write(str);
+			}
+			if (features.Readback.Current) {
+				snprintf(str, sizeof(str), ";%f",
+						(float) driverData.current / 1000000);
+				File::Write(str);
+			}
+			if (features.Readback.Voltage) {
+				snprintf(str, sizeof(str), ";%f",
+						(float) driverData.voltage / 1000000);
+				File::Write(str);
+			}
+			if (features.Readback.Thrust) {
+				snprintf(str, sizeof(str), ";%f",
+						(float) driverData.thrust / 1000000);
+				File::Write(str);
+			}
+			File::Write("\n");
 		}
 	}
 

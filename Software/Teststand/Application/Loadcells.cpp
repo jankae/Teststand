@@ -114,6 +114,7 @@ static void SetDefaultConfig() {
 }
 
 static constexpr File::Entry configEntries[] = {
+		{"Loadcell::Samplerate", &Loadcells::rate, File::PointerType::INT8},
 		{"Loadcell::Force::Cell", &Loadcells::select_cell[(int)Loadcells::MeasCell::Force], File::PointerType::INT8},
 		{"Loadcell::Force::Inv", &Loadcells::invert_cell[(int)Loadcells::MeasCell::Force], File::PointerType::BOOL},
 		{"Loadcell::Torque1::Cell", &Loadcells::select_cell[(int)Loadcells::MeasCell::Torque1], File::PointerType::INT8},
